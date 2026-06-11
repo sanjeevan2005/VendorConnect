@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_anthropic_client, get_app_settings, get_supabase_client
-from app.models.rfq import ParseRFQRequest, ParseRFQResponse
+from app.models.rfq import ParseRFQRequest, ParseRFQResponse, CreateRFQRequest
 from app.services.rfq_parser import parse_rfq
 from typing import Any
 
@@ -36,6 +36,18 @@ def list_rfqs(
     """Fetch all RFQs (Replacing frontend Supabase query)."""
     sb = get_supabase_client(settings)
     res = sb.table("rfqs").select("*").execute()
+    return {"data": res.data}
+
+
+@router.post("/rfqs")
+def create_rfq(
+    req: CreateRFQRequest,
+    settings: Settings = Depends(get_app_settings),
+) -> dict[str, Any]:
+    """Create a new RFQ."""
+    sb = get_supabase_client(settings)
+    row = req.model_dump()
+    res = sb.table("rfqs").insert(row).execute()
     return {"data": res.data}
 
 

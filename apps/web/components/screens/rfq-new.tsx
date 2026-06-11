@@ -1,7 +1,6 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { Icons } from "@/components/icons";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -83,11 +82,8 @@ export function RfqNew({ onBack, onCreated }: { onBack: () => void; onCreated: (
     if (!validate()) return;
     setSubmitting(true);
     setSubmitError(null);
-    if (!supabase) {
-      setSubmitting(false);
-      setSubmitError("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local to create RFQs.");
-      return;
-    }
+    setSubmitting(true);
+    setSubmitError(null);
 
     const id = genRfqId();
     const row = {
@@ -109,10 +105,20 @@ export function RfqNew({ onBack, onCreated }: { onBack: () => void; onCreated: (
       sample_required: fields.sample_required,
       recurring: fields.recurring,
     };
-    const { error } = await supabase.from("rfqs").insert(row);
-    if (error) {
+    try {
+      const dbRes = await fetch(`${API_URL}/api/rfqs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row),
+      });
+      if (!dbRes.ok) {
+        setSubmitting(false);
+        setSubmitError(`Could not save RFQ: HTTP ${dbRes.status}`);
+        return;
+      }
+    } catch (err) {
       setSubmitting(false);
-      setSubmitError(`Could not save RFQ: ${error.message}`);
+      setSubmitError(`Could not save RFQ: ${err instanceof Error ? err.message : "network error"}`);
       return;
     }
     try {

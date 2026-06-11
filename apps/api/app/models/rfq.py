@@ -38,5 +38,28 @@ class ParseRFQResponse(BaseModel):
     """Response body for POST /parse-rfq."""
     model_config = {"extra": "forbid"}
 
-
     fields: ParsedRFQFields
+
+
+class CreateRFQRequest(BaseModel):
+    """Request body for POST /rfqs."""
+    model_config = {"extra": "forbid"}
+
+    id: str
+    title: str
+    status: str = "active"
+    quantity: int | None = None
+    location: str | None = None
+    product_category: str | None = None
+    product_description: str | None = None
+    unit_of_measure: str | None = None
+    budget_min: float | None = None
+    budget_max: float | None = None
+    target_unit_price: float | None = None
+    timeline_weeks: int | None = None
+    delivery_destination: str | None = None
+    certifications: list[str] = Field(default_factory=list)
+    payment_terms: str | None = None
+    sample_required: bool = False
+    recurring: bool = False
+
