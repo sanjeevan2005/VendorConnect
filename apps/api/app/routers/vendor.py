@@ -172,4 +172,3 @@ def get_vendor(
         "thread_events": e_res.data,
         "call_events": c_res.data,
     }
-

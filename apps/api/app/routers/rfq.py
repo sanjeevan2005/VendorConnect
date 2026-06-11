@@ -60,4 +60,3 @@ def get_rfq(
     r_res = sb.table("rfqs").select("*").eq("id", rfq_id).maybeSingle().execute()
     v_res = sb.table("vendors").select("*").eq("rfq_id", rfq_id).execute()
     return {"rfqRow": r_res.data, "vendors": v_res.data}
-

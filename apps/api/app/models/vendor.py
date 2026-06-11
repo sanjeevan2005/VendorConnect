@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 class DiscoverVendorsRequest(BaseModel):
     """Request body for POST /discover-vendors."""
+
     model_config = {"extra": "forbid"}
     rfq_id: str = Field(..., min_length=1, description="RFQ identifier.")
     location: str | None = Field(default=None, description="ISO3 country code (e.g. 'USA').")
@@ -21,6 +22,7 @@ class DiscoverVendorsRequest(BaseModel):
 
 class VendorContact(BaseModel):
     """Point-of-contact information discovered via Crust Data."""
+
     model_config = {"extra": "forbid"}
     name: str | None = None
     title: str | None = None
@@ -30,6 +32,7 @@ class VendorContact(BaseModel):
 
 class VendorRow(BaseModel):
     """A vendor record as stored in Supabase and returned to the frontend."""
+
     model_config = {"extra": "forbid"}
     id: str
     rfq_id: str
@@ -51,6 +54,7 @@ class VendorRow(BaseModel):
 
 class SearchPlan(BaseModel):
     """AI-generated search plan for vendor discovery."""
+
     model_config = {"extra": "forbid"}
     categories: list[str] = Field(default_factory=list)
     specialities: list[str] = Field(default_factory=list)
@@ -60,6 +64,7 @@ class SearchPlan(BaseModel):
 
 class DiscoverVendorsResponse(BaseModel):
     """Response body for POST /discover-vendors."""
+
     model_config = {"extra": "forbid"}
     vendors: list[dict[str, Any]] = Field(default_factory=list)
     search_plan: SearchPlan
