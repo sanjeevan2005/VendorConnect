@@ -9,14 +9,12 @@ class ParseRFQRequest(BaseModel):
     """Request body for POST /parse-rfq."""
     model_config = {"extra": "forbid"}
 
-
     transcript: str = Field(..., min_length=1, description="Voice transcript to extract RFQ fields from.")
 
 
 class ParsedRFQFields(BaseModel):
     """Structured fields extracted from an RFQ transcript."""
     model_config = {"extra": "forbid"}
-
 
     product_description: str | None = None
     product_category: str | None = None

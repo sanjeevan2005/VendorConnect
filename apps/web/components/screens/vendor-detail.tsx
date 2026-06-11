@@ -9,7 +9,7 @@ import { TranscriptViewer } from "../vendor/transcript-viewer";
 import { DraftComposer } from "../vendor/draft-composer";
 import { VendorStats } from "../vendor/vendor-stats";
 import { VendorHeader } from "../vendor/vendor-header";
-import { VendorSchema, Vendor } from "@/lib/types";
+import { VendorSchema, Vendor, CallEventRow } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
@@ -40,7 +40,7 @@ export function VendorDetail({ vendorId, onBack }: { vendorId: string; onBack: (
     const callEvs = (call_events ?? []);
     
     let callComplete = null;
-    const completedEv = callEvs.find((ce) => ce.event_type === "call_complete");
+    const completedEv = callEvs.find((ce: CallEventRow) => ce.event_type === "call_complete");
     
     if (completedEv?.payload) {
       const p = completedEv.payload;
@@ -55,7 +55,7 @@ export function VendorDetail({ vendorId, onBack }: { vendorId: string; onBack: (
       };
     }
 
-    const callEventCards = callEvs.map((ce) => {
+    const callEventCards = callEvs.map((ce: CallEventRow) => {
       const when = new Date(ce.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
       if (ce.event_type === "call_complete" && ce.payload) {
         const p = ce.payload;

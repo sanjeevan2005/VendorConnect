@@ -28,6 +28,7 @@ from vapi import trigger_call
 if TYPE_CHECKING:
     from app.config import Settings
 
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["vendors"])

@@ -13,6 +13,7 @@ from app.services.rfq_parser import parse_rfq
 if TYPE_CHECKING:
     from app.config import Settings
 
+
 router = APIRouter(tags=["rfq"])
 
 
