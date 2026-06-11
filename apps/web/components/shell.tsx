@@ -61,33 +61,7 @@ export function Topbar({ crumbs }: { crumbs: string[] }) {
   );
 }
 
-export function StatusChip({ status }: { status: VendorStatus | "active" | "closed" }) {
-  const map: Record<string, { cls: string; label: string; dot?: boolean }> = {
-    discovered: { cls: "chip-neutral", label: "Discovered" },
-    calling:   { cls: "chip-warn",    label: "Calling" },
-    voicemail: { cls: "chip-neutral", label: "Voicemail left" },
-    responded: { cls: "chip-info",    label: "Responded" },
-    qualified: { cls: "chip-info",    label: "Qualified" },
-    quoted:    { cls: "chip-pos",     label: "Quoted" },
-    emailing:  { cls: "chip-info",    label: "Negotiating" },
-    completed: { cls: "chip-pos",     label: "Completed" },
-    "no-response": { cls: "chip-neutral", label: "No response" },
-    declined:  { cls: "chip-neutral", label: "Declined" },
-    active:    { cls: "chip-pos",     label: "Active", dot: true },
-    closed:    { cls: "chip-neutral", label: "Closed" },
-  };
-  const m = map[status] ?? { cls: "chip-neutral", label: status };
 
-  if (status === "calling") {
-    return (
-      <span className={`chip ${m.cls}`} style={{ gap: 6 }}>
-        <span className="pulse-dot" />
-        {m.label}
-      </span>
-    );
-  }
-  return <span className={`chip ${m.cls} ${m.dot ? "chip-dot" : ""}`}>{m.label}</span>;
-}
 
 export function FitBar({ score }: { score: number }) {
   const color =

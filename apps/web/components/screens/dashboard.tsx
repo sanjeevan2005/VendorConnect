@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
 import { DASHBOARD_RFQS } from "@/lib/data";
-import { StatusChip } from "@/components/shell";
+import { Sidebar, Topbar } from "@/components/shell";
+import { StatusChip } from "@/components/status-chip";
 import { Icons } from "@/components/icons";
 
 interface RfqRow {
@@ -17,30 +18,29 @@ interface RfqRow {
 }
 
 export function Dashboard({ onOpenRfq, onNewRfq }: { onOpenRfq: (id: string) => void; onNewRfq: () => void }) {
-  const [rfqs, setRfqs] = useState(DASHBOARD_RFQS);
-  const [loading, setLoading] = useState(Boolean(supabase));
+  const fetcher = async () => {
+    if (!supabase) return DASHBOARD_RFQS;
+    const { data, error } = await supabase.from("rfqs").select("*");
+    if (error) throw error;
+    if (!data || data.length === 0) return DASHBOARD_RFQS;
+    
+    return data.map((r: RfqRow) => ({
+      id: r.id,
+      title: r.title,
+      qty: r.quantity,
+      status: r.status,
+      created: new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      vendors: 12,
+      quotes: 3,
+      target: r.target_unit ?? r.target_unit_price,
+      bestQuote: null as number | null,
+    }));
+  };
 
-  useEffect(() => {
-    if (!supabase) return;
-
-    supabase.from("rfqs").select("*").then(({ data }) => {
-      if (data && data.length > 0) {
-        const mapped = data.map((r: RfqRow) => ({
-          id: r.id,
-          title: r.title,
-          qty: r.quantity,
-          status: r.status,
-          created: new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-          vendors: 12,
-          quotes: 3,
-          target: r.target_unit ?? r.target_unit_price,
-          bestQuote: null as number | null,
-        }));
-        setRfqs(mapped as typeof DASHBOARD_RFQS);
-      }
-      setLoading(false);
-    });
-  }, []);
+  const { data: rfqs, isLoading: loading } = useSWR("rfqs", fetcher, {
+    fallbackData: DASHBOARD_RFQS,
+    refreshInterval: 5000,
+  });
 
   const active = rfqs.filter((r) => r.status === "active");
   const totalVendors = rfqs.reduce((a, r) => a + r.vendors, 0);

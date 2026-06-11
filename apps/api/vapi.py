@@ -1,32 +1,34 @@
-﻿"""
-Vapi client for VendrSurf.
+"""Vapi client for VendrSurf.
 
-Three things in here:
-1. build_assistant_config() - the full Vapi assistant payload
-2. create_or_update_assistant() - one-time setup
-3. trigger_call() - per-vendor outbound call with dynamic variables
-4. handle_end_of_call_report() - process webhook event, return dashboard update
+Handles:
+1. build_assistant_config() — the full Vapi assistant payload
+2. create_assistant() / update_assistant() — one-time setup
+3. trigger_call() — per-vendor outbound call with dynamic variables
+4. handle_webhook() — process webhook event, return dashboard update
 
 Requires: VAPI_API_KEY, VAPI_PHONE_NUMBER_ID env vars.
 """
 
 from __future__ import annotations
 
+import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
-import requests
+import httpx
 
 from prompts import (
-    SYSTEM_PROMPT,
     ANALYSIS_PROMPT,
+    FIRST_MESSAGE,
     STRUCTURED_DATA_SCHEMA,
     SUCCESS_EVALUATION_PROMPT,
-    FIRST_MESSAGE,
+    SYSTEM_PROMPT,
 )
 
+logger = logging.getLogger(__name__)
 
 VAPI_BASE_URL = "https://api.vapi.ai"
+_DEFAULT_TIMEOUT = 30.0
 
 
 # =============================================================================
@@ -35,21 +37,15 @@ VAPI_BASE_URL = "https://api.vapi.ai"
 
 
 def build_assistant_config(name: str = "VendrSurf Qualifier v1") -> dict[str, Any]:
-    """
-    Returns the full Vapi assistant configuration.
+    """Return the full Vapi assistant configuration.
 
-    Notes on the config choices:
-    - gpt-4o for the model: good balance of reasoning + voice latency.
-      If you want to test Claude Sonnet, swap provider/model below.
-    - 11labs + Sarah voice: professional female voice, clear diction.
-      Other good options: voiceId="jessica", voiceId="charlotte".
-    - Deepgram Nova-3 transcriber: current default, good on technical vocab.
-    - endCallPhrases + endCallFunctionEnabled: lets the model hang up cleanly.
-    - silenceTimeoutSeconds=30: hang up if nothing is heard for 30s.
+    Notes on config choices:
+    - gpt-4o: good balance of reasoning + voice latency.
+    - 11labs Sarah: professional female voice, clear diction.
+    - Deepgram Nova-3: current default, good on technical vocab.
+    - silenceTimeoutSeconds=30: hang up if nothing heard for 30s.
     - maxDurationSeconds=600: hard cap at 10 minutes.
-    - backgroundSound="office": soft office ambience so silences don't feel dead.
     """
-
     server_url = os.environ.get(
         "WEBHOOK_URL",
         "https://vendrsurf-backend-production.up.railway.app/vapi/webhook",
@@ -108,7 +104,7 @@ def build_assistant_config(name: str = "VendrSurf Qualifier v1") -> dict[str, An
 
 
 # =============================================================================
-# CREATE / UPDATE ASSISTANT (one-time setup)
+# AUTH
 # =============================================================================
 
 
@@ -122,35 +118,39 @@ def _auth_headers() -> dict[str, str]:
     }
 
 
+# =============================================================================
+# CREATE / UPDATE ASSISTANT
+# =============================================================================
+
+
 def create_assistant() -> dict[str, Any]:
-    """Create a new assistant. Returns the full assistant object including id."""
+    """Create a new Vapi assistant. Returns the full assistant object including id."""
     config = build_assistant_config()
-    resp = requests.post(
-        f"{VAPI_BASE_URL}/assistant",
-        headers=_auth_headers(),
-        json=config,
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    with httpx.Client(timeout=_DEFAULT_TIMEOUT) as client:
+        resp = client.post(
+            f"{VAPI_BASE_URL}/assistant",
+            headers=_auth_headers(),
+            json=config,
+        )
+        resp.raise_for_status()
+        return resp.json()
 
 
 def update_assistant(assistant_id: str) -> dict[str, Any]:
-    """Update an existing assistant with the current config."""
+    """Update an existing Vapi assistant with the current config."""
     config = build_assistant_config()
-    # PATCH takes the same fields, no wrapping needed
-    resp = requests.patch(
-        f"{VAPI_BASE_URL}/assistant/{assistant_id}",
-        headers=_auth_headers(),
-        json=config,
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    with httpx.Client(timeout=_DEFAULT_TIMEOUT) as client:
+        resp = client.patch(
+            f"{VAPI_BASE_URL}/assistant/{assistant_id}",
+            headers=_auth_headers(),
+            json=config,
+        )
+        resp.raise_for_status()
+        return resp.json()
 
 
 # =============================================================================
-# TRIGGER OUTBOUND CALL (per vendor)
+# TRIGGER OUTBOUND CALL
 # =============================================================================
 
 
@@ -158,58 +158,39 @@ def trigger_call(
     assistant_id: str,
     vendor_phone: str,
     variables: dict[str, str],
-    metadata: Optional[dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """
-    Trigger an outbound call.
+    """Trigger an outbound call via the Vapi API.
 
     Args:
-        assistant_id: The Vapi assistant id
-        vendor_phone: Vendor contact number in E.164 format, e.g. "+14155551234"
-        variables: Per-call dynamic variables. Must include all of:
-            - buyer_company
-            - buyer_one_liner
-            - vendor_company
-            - contact_first_name
-            - rfq_one_liner
-            - preferred_process
-            - preferred_material
-            - target_quantity_phrase
-            - eau_phrase
-            - key_constraint
-            - required_certifications
-            - email_followup_contact
-        metadata: Anything you want echoed back on webhooks. Good for
-            {"rfq_id": "...", "vendor_id": "..."} so you can tie the
-            webhook back to dashboard rows.
+        assistant_id: The Vapi assistant id.
+        vendor_phone: Vendor phone in E.164 format (e.g. "+14155551234").
+        variables: Per-call dynamic variables injected into the assistant prompt.
+        metadata: Echoed back on webhooks for correlation (e.g. rfq_id, vendor_id).
 
     Returns:
-        The Vapi call object including id. Store this id to correlate
-        webhook events.
-    """
-    if not vendor_phone.startswith("+") or len(vendor_phone) < 8:
-        raise ValueError("vendor_phone must be E.164 format, e.g. +14155551234")
-    phone_number_id = os.environ.get("VAPI_PHONE_NUMBER_ID")
-    if not phone_number_id:
-        raise RuntimeError("VAPI_PHONE_NUMBER_ID is not set")
+        The Vapi call object including id.
 
+    Raises:
+        ValueError: If phone format is invalid or required variables are missing.
+        RuntimeError: If VAPI_PHONE_NUMBER_ID is not set.
+    """
     required = [
-        "buyer_company",
-        "buyer_one_liner",
-        "vendor_company",
-        "contact_first_name",
-        "rfq_one_liner",
-        "preferred_process",
-        "preferred_material",
-        "target_quantity_phrase",
-        "eau_phrase",
-        "key_constraint",
-        "required_certifications",
-        "email_followup_contact",
+        "buyer_company", "buyer_one_liner", "vendor_company",
+        "contact_first_name", "rfq_one_liner", "preferred_process",
+        "preferred_material", "target_quantity_phrase", "eau_phrase",
+        "key_constraint", "required_certifications", "email_followup_contact",
     ]
     missing = [k for k in required if k not in variables]
     if missing:
         raise ValueError(f"Missing required variables: {missing}")
+
+    if not vendor_phone.startswith("+") or len(vendor_phone) < 8:
+        raise ValueError("vendor_phone must be E.164 format, e.g. +14155551234")
+
+    phone_number_id = os.environ.get("VAPI_PHONE_NUMBER_ID")
+    if not phone_number_id:
+        raise RuntimeError("VAPI_PHONE_NUMBER_ID is not set")
 
     payload: dict[str, Any] = {
         "assistantId": assistant_id,
@@ -222,103 +203,34 @@ def trigger_call(
     if metadata:
         payload["metadata"] = metadata
 
-    resp = requests.post(
-        f"{VAPI_BASE_URL}/call",
-        headers=_auth_headers(),
-        json=payload,
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    logger.info("Triggering Vapi call to %s for assistant=%s", vendor_phone, assistant_id)
+
+    with httpx.Client(timeout=_DEFAULT_TIMEOUT) as client:
+        resp = client.post(
+            f"{VAPI_BASE_URL}/call",
+            headers=_auth_headers(),
+            json=payload,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+
+    logger.info("Vapi call triggered: call_id=%s", result.get("id"))
+    return result
 
 
 # =============================================================================
-# WEBHOOK HANDLER (what to do when Vapi pings you)
+# WEBHOOK HANDLER (delegated to app/services/webhook_handler.py in new arch)
 # =============================================================================
+# Kept here for backward compatibility with the CLI commands below.
 
-
-def handle_webhook(event: dict[str, Any]) -> Optional[dict[str, Any]]:
-    """
-    Process a Vapi webhook event.
-
-    Vapi fires many event types. The ones you care about for v1:
-    - "end-of-call-report": the call finished. Contains transcript,
-      recording URL, analysis (structuredData, summary, successEvaluation),
-      and the metadata you passed when triggering the call.
-    - "status-update": call state changed (optional, lets you show
-      "ringing" / "in-progress" in the dashboard live).
-
-    Returns a dashboard-ready dict if the event is actionable, else None.
-    Your FastAPI route (or whatever) handles the persistence.
-    """
-
-    msg = event.get("message", event)  # Vapi wraps in .message sometimes
-    msg_type = msg.get("type")
-
-    if msg_type == "status-update":
-        return _handle_status_update(msg)
-
-    if msg_type == "end-of-call-report":
-        return _handle_end_of_call_report(msg)
-
-    # Other event types: transcript, hang, speech-update, etc.
-    return None
-
-
-def _handle_status_update(msg: dict[str, Any]) -> dict[str, Any]:
-    call = msg.get("call", {})
-    return {
-        "event": "status_update",
-        "call_id": call.get("id"),
-        "status": msg.get("status"),  # "queued" | "ringing" | "in-progress" | "forwarding" | "ended"
-        "rfq_id": (call.get("metadata") or {}).get("rfq_id"),
-        "vendor_id": (call.get("metadata") or {}).get("vendor_id"),
-    }
-
-
-def _handle_end_of_call_report(msg: dict[str, Any]) -> dict[str, Any]:
-    call = msg.get("call", {})
-    analysis = msg.get("analysis", {})
-    structured = analysis.get("structuredData", {}) or {}
-    metadata = call.get("metadata") or {}
-    artifact = msg.get("artifact", {}) or {}
-
-    return {
-        "event": "call_complete",
-        "call_id": call.get("id"),
-        "rfq_id": metadata.get("rfq_id"),
-        "vendor_id": metadata.get("vendor_id"),
-        "ended_reason": msg.get("endedReason"),  # "customer-ended-call", etc.
-        "duration_seconds": msg.get("durationSeconds"),
-        "cost_usd": msg.get("cost"),
-        "recording_url": artifact.get("recordingUrl") or artifact.get("stereoRecordingUrl") or msg.get("recordingUrl") or msg.get("stereoRecordingUrl"),
-        "transcript": artifact.get("transcript") or msg.get("transcript"),
-        "messages": artifact.get("messages") or msg.get("messages") or [],
-        "summary": analysis.get("summary"),
-        "success": analysis.get("successEvaluation"),
-        # Structured fields - flatten into the top-level update
-        "outcome": structured.get("outcome"),
-        "capability_qualified": structured.get("capability_qualified"),
-        "capability_notes": structured.get("capability_notes"),
-        "vendor_ballpark_unit_price_low": structured.get("vendor_ballpark_unit_price_low"),
-        "vendor_ballpark_unit_price_high": structured.get("vendor_ballpark_unit_price_high"),
-        "vendor_lead_time_first_article_weeks": structured.get("vendor_lead_time_first_article_weeks"),
-        "vendor_lead_time_production_weeks": structured.get("vendor_lead_time_production_weeks"),
-        "vendor_moq": structured.get("vendor_moq"),
-        "vendor_nre_estimate_usd": structured.get("vendor_nre_estimate_usd"),
-        "quote_interest_confirmed": structured.get("quote_interest_confirmed"),
-        "quote_interest_reason": structured.get("quote_interest_reason"),
-        "vendor_email_captured": structured.get("vendor_email_captured"),
-        "vendor_requested_response_days": structured.get("vendor_requested_response_days"),
-        "correct_contact_name": structured.get("correct_contact_name"),
-        "correct_contact_title": structured.get("correct_contact_title"),
-        "objections_raised": structured.get("objections_raised") or [],
-        "vendor_notes_for_buyer": structured.get("vendor_notes_for_buyer"),
-    }
+def handle_webhook(event: dict[str, Any]) -> dict[str, Any] | None:
+    """Process a Vapi webhook event. Delegates to the service layer."""
+    from app.services.webhook_handler import process_webhook
+    return process_webhook(event)
 
 
 # =============================================================================
-# CLI - run this file directly to set up the assistant
+# CLI
 # =============================================================================
 
 
@@ -340,7 +252,7 @@ if __name__ == "__main__":
     if cmd == "create":
         result = create_assistant()
         print(f"Created assistant: {result['id']}")
-        print(f"Save this ID and set VAPI_ASSISTANT_ID env var.")
+        print("Save this ID and set VAPI_ASSISTANT_ID env var.")
         print(json.dumps(result, indent=2)[:500] + "...")
 
     elif cmd == "update":
@@ -354,7 +266,6 @@ if __name__ == "__main__":
         if len(sys.argv) < 4:
             print("Need assistant_id and phone (E.164 format, e.g. +14155551234)")
             sys.exit(1)
-        # Example test call - edit variables for your actual RFQ
         test_vars = {
             "buyer_company": "Helios Robotics",
             "buyer_one_liner": (
@@ -387,4 +298,3 @@ if __name__ == "__main__":
     else:
         print(f"Unknown command: {cmd}")
         sys.exit(1)
-

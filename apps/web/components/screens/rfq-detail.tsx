@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { RFQ_DATA, VENDORS, Vendor } from "@/lib/data";
-import { StatusChip } from "@/components/shell";
+import { Sidebar, Topbar, FitBar } from "@/components/shell";
+import { StatusChip } from "@/components/status-chip";
 import { Icons } from "@/components/icons";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
