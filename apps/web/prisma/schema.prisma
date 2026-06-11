@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model rfq {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                 String
+  status                String    @default("draft")
+  product_category      String?
+  product_description   String?
+  location              String?
+  quantity              Int?
+  budget_min            Float?
+  budget_max            Float?
+  timeline_weeks        Int?
+  target_unit_price     Float?
+  delivery_destination  String?
+  payment_terms         String?
+  sample_required       Boolean   @default(false)
+  recurring             Boolean   @default(false)
+  material              String?
+  finish                String?
+  tolerance             String?
+  certifications        String[]
+  max_lead_time_days    Int?
+  workspace_name        String?
+  current_user_name     String?
+  current_user_email    String?
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+
+  vendors               vendor[]
+}
+
+model vendor {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfq_id          String    @db.Uuid
+  name            String
+  location        String?
+  employees       String?
+  contact         Json?     // {name, role, linkedin, phone, email, has_business_email}
+  status          String    @default("discovered")
+  unit_price      Float?
+  lead_time       Int?
+  moq             Int?
+  nre             Float?
+  certs           String[]
+  capabilities    String[]
+  risk            String?
+  fit_score       Float?
+  call_duration   String?
+  call_outcome    String?
+  summary         String?
+  transcript      String?
+  recording_url   String?
+  email           String?
+  payment_terms   String?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+
+  rfq             rfq       @relation(fields: [rfq_id], references: [id], onDelete: Cascade)
+}
+
+model call_events {
+  id          Int      @id @default(autoincrement())
+  call_id     String?
+  rfq_id      String?  @db.Uuid
+  vendor_id   String?  @db.Uuid
+  event_type  String
+  status      String?
+  payload     Json
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+}

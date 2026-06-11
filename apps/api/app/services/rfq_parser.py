@@ -6,7 +6,8 @@ import json
 import logging
 from typing import Any
 
-from anthropic import Anthropic
+from anthropic import Anthropic, APIError
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.exceptions import ExternalServiceError
 from app.models.rfq import ParsedRFQFields
@@ -58,6 +59,17 @@ UOM_ALLOWED = {"units", "kg", "tons", "meters", "liters", "pieces"}
 PAYMENT_TERMS_ALLOWED = {"advance", "net_30", "net_60", "net_90"}
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+def _call_anthropic(client: Anthropic, model: str, prompt: str) -> str:
+    """Make the API call to Anthropic with exponential backoff."""
+    msg = client.messages.create(
+        model=model,
+        max_tokens=1000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
+
+
 def parse_rfq(client: Anthropic, model: str, transcript: str) -> ParsedRFQFields:
     """Parse a voice transcript into structured RFQ fields using Claude.
 
@@ -73,15 +85,8 @@ def parse_rfq(client: Anthropic, model: str, transcript: str) -> ParsedRFQFields
         ExternalServiceError: If the Claude API call fails or returns unparseable output.
     """
     try:
-        msg = client.messages.create(
-            model=model,
-            max_tokens=1000,
-            messages=[{"role": "user", "content": PARSE_RFQ_PROMPT.format(transcript=transcript)}],
-        )
-        text = "".join(
-            b.text for b in msg.content if getattr(b, "type", "") == "text"
-        ).strip()
-    except Exception as e:
+        text = _call_anthropic(client, model, PARSE_RFQ_PROMPT.format(transcript=transcript))
+    except APIError as e:
         logger.exception("Anthropic API call failed during RFQ parsing")
         raise ExternalServiceError("Anthropic", str(e)) from e
 

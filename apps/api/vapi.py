@@ -16,6 +16,7 @@ import os
 from typing import Any
 
 import httpx
+from tenacity import retry, retry_if_not_exception_type, stop_after_attempt, wait_exponential
 
 from prompts import (
     ANALYSIS_PROMPT,
@@ -154,6 +155,11 @@ def update_assistant(assistant_id: str) -> dict[str, Any]:
 # =============================================================================
 
 
+@retry(
+    stop=stop_after_attempt(3), 
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_not_exception_type((ValueError, RuntimeError))
+)
 def trigger_call(
     assistant_id: str,
     vendor_phone: str,

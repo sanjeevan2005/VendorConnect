@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from app.config import Settings, get_settings
 from app.exceptions import register_exception_handlers
 from app.middleware import RequestLoggingMiddleware, configure_cors
+from app.rate_limiter import setup_rate_limiting
 from app.routers import call, health, rfq, vendor, webhook
 
 
@@ -35,11 +36,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="1.0.0",
     )
 
-    # Middleware (order matters: first added = outermost)
+    # Global dependencies and middleware
     configure_cors(app, settings)
     app.add_middleware(RequestLoggingMiddleware)
-
-    # Exception handlers
+    setup_rate_limiting(app)
     register_exception_handlers(app)
 
     # Routers

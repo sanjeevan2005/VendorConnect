@@ -5,6 +5,8 @@
  * type safety across all frontend components.
  */
 
+import { z } from "zod";
+
 // ---------------------------------------------------------------------------
 // Vendor
 // ---------------------------------------------------------------------------
@@ -227,3 +229,55 @@ export interface ViewState {
   rfqId?: string;
   vendorId?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Zod Schemas
+// ---------------------------------------------------------------------------
+
+export const VendorContactSchema = z.object({
+  name: z.string().optional(),
+  role: z.string().optional(),
+  title: z.string().optional(),
+  linkedin: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  has_business_email: z.boolean().optional(),
+});
+
+export const VendorSchema = z.object({
+  id: z.string(),
+  rfq_id: z.string().optional(),
+  name: z.string(),
+  location: z.string().optional().nullable(),
+  employees: z.string().optional().nullable(),
+  contact: VendorContactSchema.nullable(),
+  status: z.string(),
+  unit_price: z.number().optional().nullable(),
+  lead_time: z.number().optional().nullable(),
+  moq: z.number().optional().nullable(),
+  nre: z.number().optional().nullable(),
+  certs: z.array(z.string()).optional().nullable(),
+  capabilities: z.array(z.string()).optional().nullable(),
+  risk: z.string().optional().nullable(),
+  fit_score: z.number().optional().nullable(),
+  last_update: z.string().optional().nullable(),
+  call_duration: z.string().optional().nullable(),
+  call_outcome: z.string().optional().nullable(),
+  summary: z.string().optional().nullable(),
+  transcript: z.string().optional().nullable(),
+  recording_url: z.string().optional().nullable(),
+  email: z.string().optional().nullable(),
+  payment_terms: z.string().optional().nullable(),
+});
+
+export const DashboardRFQSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  qty: z.number(),
+  status: z.string(),
+  created: z.string(),
+  vendors: z.number(),
+  quotes: z.number(),
+  target: z.number().nullable(),
+  bestQuote: z.number().nullable(),
+});

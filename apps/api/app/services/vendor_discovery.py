@@ -9,6 +9,7 @@ from typing import Any
 
 import httpx
 from anthropic import Anthropic
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +161,7 @@ def _crust_headers(api_key: str) -> dict[str, str]:
     }
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def crust_company_search(
     client: httpx.Client,
     headers: dict[str, str],
@@ -249,6 +251,7 @@ def search_companies_multi(
     return list(seen.values())[:10]
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def crust_person_search_for_company(
     client: httpx.Client,
     headers: dict[str, str],

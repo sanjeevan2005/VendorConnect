@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
 import { RFQ_DATA, VENDORS, Vendor } from "@/lib/data";
-import { Sidebar, Topbar, FitBar } from "@/components/shell";
 import { StatusChip } from "@/components/status-chip";
 import { Icons } from "@/components/icons";
+import { VendorSchema } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
@@ -26,79 +27,45 @@ type RfqRow = {
   created_at: string | null;
 };
 
-function mapVendor(v: Record<string, unknown>): Vendor {
-  const rawContact = (v.contact as Record<string, unknown> | null) ?? null;
-  const contact = rawContact
-    ? {
-        name: (rawContact.name as string) ?? "-",
-        role: (rawContact.role as string) ?? (rawContact.title as string) ?? "",
-        linkedin: rawContact.linkedin as string | undefined,
-        phone: rawContact.phone as string | undefined,
-        email: rawContact.email as string | undefined,
-      }
-    : { name: "-", role: "" };
-  return {
-    id: v.id as string,
-    name: (v.name as string) ?? "Unknown",
-    location: (v.location as string) ?? "-",
-    employees: (v.employees as string) ?? "-",
-    contact,
-    status: ((v.status as Vendor["status"]) ?? "discovered"),
-    unitPrice: (v.unit_price as number | null) ?? null,
-    leadTime: (v.lead_time as number | null) ?? null,
-    moq: (v.moq as number | null) ?? null,
-    nre: (v.nre as number | null) ?? null,
-    certs: (v.certs as string[]) ?? [],
-    capabilities: (v.capabilities as string[]) ?? [],
-    risk: (v.risk as string) ?? "-",
-    fitScore: (v.fit_score as number) ?? 0,
-    lastUpdate: (v.last_update as string) ?? "just now",
-    callDuration: (v.call_duration as string) ?? "0:00",
-    callOutcome: (v.call_outcome as string) ?? "Awaiting outreach",
-    summary: (v.summary as string) ?? "",
-  };
-}
-
 export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBack: () => void; onOpenVendor: (id: string) => void }) {
-  const [rfqRow, setRfqRow] = useState<RfqRow | null>(null);
   const [filter, setFilter] = useState("all");
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const [callingId, setCallingId] = useState<string | null>(null);
+  const [callMsg, setCallMsg] = useState<Record<string, string>>({});
   const isFixture = rfqId === RFQ_DATA.id;
 
+  const fetcher = async () => {
+    if (!supabase) return { rfqRow: null, vendors: isFixture ? VENDORS : [] };
+
+    const [rRes, vRes] = await Promise.all([
+      supabase.from("rfqs").select("*").eq("id", rfqId).maybeSingle(),
+      supabase.from("vendors").select("*").eq("rfq_id", rfqId)
+    ]);
+
+    const rfqRow = rRes.data as RfqRow | null;
+    
+    let parsedVendors: Vendor[] = [];
+    if (vRes.data && vRes.data.length > 0) {
+      parsedVendors = vRes.data.map(v => {
+        const res = VendorSchema.safeParse(v);
+        return res.success ? (res.data as Vendor) : (v as unknown as Vendor);
+      });
+    } else if (isFixture) {
+      parsedVendors = VENDORS;
+    }
+
+    return { rfqRow, vendors: parsedVendors };
+  };
+
+  const { data, isLoading } = useSWR(`rfq-${rfqId}`, fetcher, { refreshInterval: 5000 });
+
+  const rfqRow = data?.rfqRow ?? null;
+  // We use state to allow live ticking of call duration locally between SWR polls
+  const [vendors, setVendors] = useState<Vendor[]>(data?.vendors ?? []);
+
+  // Update local vendors when SWR data changes
   useEffect(() => {
-    if (!supabase) return;
-
-    supabase.from("rfqs").select("*").eq("id", rfqId).maybeSingle().then(({ data }) => {
-      if (data) setRfqRow(data as RfqRow);
-    });
-  }, [rfqId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchVendors = async () => {
-      if (!supabase) {
-        setVendors(isFixture ? VENDORS : []);
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await supabase.from("vendors").select("*").eq("rfq_id", rfqId);
-      if (cancelled) return;
-      if (data && data.length > 0) {
-        setVendors(data.map(mapVendor));
-      } else if (isFixture) {
-        setVendors(VENDORS);
-      } else {
-        setVendors([]);
-      }
-      setLoading(false);
-    };
-    fetchVendors();
-    const poll = setInterval(fetchVendors, 5000);
-    return () => { cancelled = true; clearInterval(poll); };
-  }, [rfqId, isFixture]);
+    if (data?.vendors) setVendors(data.vendors);
+  }, [data?.vendors]);
 
   const rfq = rfqRow
     ? {
@@ -120,10 +87,10 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
     const t = setInterval(() => {
       setVendors((vs) =>
         vs.map((v) => {
-          if (v.status === "calling") {
-            const [m, s] = v.callDuration.split(":").map(Number);
+          if (v.status === "calling" && v.call_duration) {
+            const [m, s] = v.call_duration.split(":").map(Number);
             const total = m * 60 + s + 1;
-            return { ...v, callDuration: `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, "0")}` };
+            return { ...v, call_duration: `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, "0")}` };
           }
           return v;
         })
@@ -142,8 +109,6 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
     declined: vendors.filter((v) => v.status === "declined").length,
   };
 
-  const [callingId, setCallingId] = useState<string | null>(null);
-  const [callMsg, setCallMsg] = useState<Record<string, string>>({});
   const triggerCall = async (vendorId: string) => {
     setCallingId(vendorId);
     setCallMsg((m) => ({ ...m, [vendorId]: "" }));
@@ -170,21 +135,21 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
   });
 
   return (
-    <div className="content fade-in" style={{ maxWidth: 1280 }}>
-      <div className="row" style={{ marginBottom: 6 }}>
-        <button className="btn btn-ghost btn-sm" onClick={onBack} style={{ marginLeft: -8 }}>
-          <Icons.Chev size={12} style={{ transform: "rotate(180deg)" }} /> Dashboard
+    <div className="content fade-in max-w-[1280px]">
+      <div className="flex mb-1.5">
+        <button className="btn btn-ghost btn-sm -ml-2" onClick={onBack}>
+          <Icons.Chev size={12} className="rotate-180" /> Dashboard
         </button>
       </div>
 
-      <div className="row" style={{ marginBottom: 4, alignItems: "flex-start" }}>
+      <div className="flex mb-1 items-start">
         <div>
-          <div className="row" style={{ gap: 10, marginBottom: 6 }}>
-            <span className="tiny mono" style={{ color: "var(--text-tertiary)" }}>{rfq.id}</span>
+          <div className="flex gap-2.5 mb-1.5 items-center">
+            <span className="text-[11px] font-mono text-[var(--text-tertiary)]">{rfq.id}</span>
             <StatusChip status="active" />
           </div>
           <h1 className="h1">{rfq.title}</h1>
-          <div className="muted" style={{ marginTop: 4, fontSize: 13.5 }}>
+          <div className="text-[13.5px] text-[var(--text-secondary)] mt-1">
             {rfq.summary} - launched {rfq.created}
             {rfq.targetUnit ? ` - target $${rfq.targetUnit}/unit` : ""}
             {rfq.walkAwayUnit ? ` - walk-away $${rfq.walkAwayUnit}` : ""}
@@ -194,30 +159,30 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
         <button className="btn"><Icons.Download size={13} /> Export</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 20, marginBottom: 20 }}>
+      <div className="grid grid-cols-5 gap-3 mt-5 mb-5">
         <div className="card stat"><div className="stat-label">Reached out</div><div className="stat-value">{counts.all}</div></div>
         <div className="card stat">
           <div className="stat-label">Live calls</div>
-          <div className="stat-value" style={{ color: "var(--warn)", display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="stat-value text-[var(--warn)] flex items-center gap-2">
             {counts.calling}{counts.calling > 0 && <span className="pulse-dot" />}
           </div>
         </div>
-        <div className="card stat"><div className="stat-label">Qualified</div><div className="stat-value" style={{ color: "var(--info)" }}>{counts.qualified}</div></div>
-        <div className="card stat"><div className="stat-label">Quoted</div><div className="stat-value" style={{ color: "var(--pos)" }}>{counts.quoted}</div></div>
-        <div className="card stat"><div className="stat-label">Declined</div><div className="stat-value" style={{ color: "var(--text-tertiary)" }}>{counts.declined}</div></div>
+        <div className="card stat"><div className="stat-label">Qualified</div><div className="stat-value text-[var(--info)]">{counts.qualified}</div></div>
+        <div className="card stat"><div className="stat-label">Quoted</div><div className="stat-value text-[var(--pos)]">{counts.quoted}</div></div>
+        <div className="card stat"><div className="stat-label">Declined</div><div className="stat-value text-[var(--text-tertiary)]">{counts.declined}</div></div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, background: "linear-gradient(90deg, var(--accent-soft), transparent)" }}>
-          <div className="pulse-dot" style={{ background: "var(--accent)" }} />
-          <div style={{ fontSize: 13, fontWeight: 600 }}>Agent is live</div>
-          <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
+      <div className="card mb-4">
+        <div className="py-3 px-4 flex items-center gap-3 bg-gradient-to-r from-[var(--accent-soft)] to-transparent">
+          <div className="pulse-dot bg-[var(--accent)]" />
+          <div className="text-[13px] font-semibold">Agent is live</div>
+          <div className="text-[12.5px] text-[var(--text-secondary)]">
             {counts.calling} calls active - {vendors.filter((v) => v.status === "emailing").length} email threads open - last action just now
           </div>
         </div>
       </div>
 
-      <div className="row" style={{ marginBottom: 12 }}>
+      <div className="flex mb-3">
         <div className="segmented">
           {(
             [
@@ -235,64 +200,64 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
         </div>
       </div>
 
-      <div className="card" style={{ overflow: "hidden" }}>
-        {loading ? (
-          <div style={{ padding: 32, textAlign: "center", color: "var(--text-tertiary)" }}>Loading vendors...</div>
+      <div className="card overflow-hidden">
+        {isLoading && vendors.length === 0 ? (
+          <div className="p-8 text-center text-[var(--text-tertiary)]">Loading vendors...</div>
         ) : (
           <table className="tbl">
             <thead>
               <tr>
-                <th style={{ width: "22%" }}>Vendor</th>
-                <th style={{ width: 140 }}>Contact</th>
-                <th style={{ width: 130 }}>Status</th>
-                <th style={{ width: 110, textAlign: "right" }}>Unit price</th>
-                <th style={{ width: 90, textAlign: "right" }}>Lead</th>
-                <th style={{ minWidth: 240 }}>Last action</th>
-                <th style={{ width: 110 }}></th>
-                <th style={{ width: 30 }}></th>
+                <th className="w-[22%]">Vendor</th>
+                <th className="w-[140px]">Contact</th>
+                <th className="w-[130px]">Status</th>
+                <th className="w-[110px] text-right">Unit price</th>
+                <th className="w-[90px] text-right">Lead</th>
+                <th className="min-w-[240px]">Last action</th>
+                <th className="w-[110px]"></th>
+                <th className="w-[30px]"></th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((v) => (
                 <tr key={v.id} className="clickable" onClick={() => onOpenVendor(v.id)}>
                   <td>
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{v.name}</div>
-                    <div className="tiny" style={{ marginTop: 2, color: "var(--text-secondary)" }}>{v.location} - {v.employees}</div>
+                    <div className="font-semibold text-[13.5px]">{v.name}</div>
+                    <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{v.location || "-"} - {v.employees || "-"}</div>
                   </td>
                   <td>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{v.contact.name}</div>
-                    <div className="tiny" style={{ marginTop: 2 }}>{v.contact.role}</div>
+                    <div className="text-[13px] font-semibold">{v.contact?.name || "-"}</div>
+                    <div className="text-[11px] mt-0.5">{v.contact?.role || "-"}</div>
                   </td>
                   <td><StatusChip status={v.status} /></td>
-                  <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                    {v.unitPrice != null ? (
+                  <td className="text-right tabular-nums">
+                    {v.unit_price != null ? (
                       <div>
-                        <div style={{ fontWeight: 600, color: v.unitPrice <= rfq.targetUnit ? "var(--pos)" : "var(--text)" }}>
-                          ${v.unitPrice.toFixed(2)}
+                        <div className={`font-semibold ${v.unit_price <= rfq.targetUnit ? "text-[var(--pos)]" : "text-[var(--text)]"}`}>
+                          ${v.unit_price.toFixed(2)}
                         </div>
-                        <div className="tiny" style={{ color: v.unitPrice <= rfq.targetUnit ? "var(--pos)" : "var(--text-tertiary)" }}>
-                          {v.unitPrice <= rfq.targetUnit
-                            ? `-$${(rfq.targetUnit - v.unitPrice).toFixed(2)}`
-                            : `+$${(v.unitPrice - rfq.targetUnit).toFixed(2)}`}
+                        <div className={`text-[11px] ${v.unit_price <= rfq.targetUnit ? "text-[var(--pos)]" : "text-[var(--text-tertiary)]"}`}>
+                          {v.unit_price <= rfq.targetUnit
+                            ? `-$${(rfq.targetUnit - v.unit_price).toFixed(2)}`
+                            : `+$${(v.unit_price - rfq.targetUnit).toFixed(2)}`}
                         </div>
                       </div>
-                    ) : <span style={{ color: "var(--text-tertiary)" }}>-</span>}
+                    ) : <span className="text-[var(--text-tertiary)]">-</span>}
                   </td>
-                  <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--text-secondary)" }}>
-                    {v.leadTime != null ? `${v.leadTime}d` : "-"}
+                  <td className="text-right tabular-nums text-[var(--text-secondary)]">
+                    {v.lead_time != null ? `${v.lead_time}d` : "-"}
                   </td>
                   <td>
-                    <div className="row" style={{ gap: 8 }}>
-                      {v.status === "calling" && <Icons.Phone size={13} style={{ color: "var(--warn)" }} />}
-                      {["quoted", "emailing"].includes(v.status) && <Icons.Mail size={13} style={{ color: "var(--info)" }} />}
-                      {v.status === "voicemail" && <Icons.Mic size={13} style={{ color: "var(--text-tertiary)" }} />}
-                      {v.status === "declined" && <Icons.X size={13} style={{ color: "var(--text-tertiary)" }} />}
-                      {v.status === "qualified" && <Icons.Check size={13} style={{ color: "var(--pos)" }} />}
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>
-                          {v.status === "calling" ? `Call in progress - ${v.callDuration}` : v.callOutcome}
+                    <div className="flex gap-2">
+                      {v.status === "calling" && <Icons.Phone size={13} className="text-[var(--warn)]" />}
+                      {["quoted", "emailing"].includes(v.status) && <Icons.Mail size={13} className="text-[var(--info)]" />}
+                      {v.status === "voicemail" && <Icons.Mic size={13} className="text-[var(--text-tertiary)]" />}
+                      {v.status === "declined" && <Icons.X size={13} className="text-[var(--text-tertiary)]" />}
+                      {v.status === "qualified" && <Icons.Check size={13} className="text-[var(--pos)]" />}
+                      <div className="min-w-0">
+                        <div className="text-[12.5px] font-semibold whitespace-nowrap">
+                          {v.status === "calling" ? `Call in progress - ${v.call_duration}` : v.call_outcome}
                         </div>
-                        <div className="tiny" style={{ whiteSpace: "nowrap" }}>{v.lastUpdate}</div>
+                        <div className="text-[11px] whitespace-nowrap">{v.last_update || "just now"}</div>
                       </div>
                     </div>
                   </td>
@@ -305,10 +270,10 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
                       <Icons.Phone size={12} /> {callingId === v.id ? "..." : "Call"}
                     </button>
                     {callMsg[v.id] && (
-                      <div className="tiny" style={{ marginTop: 2, color: "var(--text-secondary)" }}>{callMsg[v.id]}</div>
+                      <div className="text-[11px] mt-0.5 text-[var(--text-secondary)]">{callMsg[v.id]}</div>
                     )}
                   </td>
-                  <td><Icons.Chev size={13} style={{ color: "var(--text-tertiary)" }} /></td>
+                  <td><Icons.Chev size={13} className="text-[var(--text-tertiary)]" /></td>
                 </tr>
               ))}
             </tbody>
@@ -318,4 +283,3 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
     </div>
   );
 }
-
