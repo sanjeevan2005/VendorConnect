@@ -85,40 +85,48 @@ class UtilsTests(unittest.TestCase):
 
     def test_coerce_int_valid(self) -> None:
         from app.utils.coerce import coerce_int
+
         self.assertEqual(coerce_int("42"), 42)
         self.assertEqual(coerce_int(42), 42)
 
     def test_coerce_int_none(self) -> None:
         from app.utils.coerce import coerce_int
+
         self.assertIsNone(coerce_int(None))
         self.assertIsNone(coerce_int(""))
         self.assertIsNone(coerce_int("abc"))
 
     def test_coerce_enum_valid(self) -> None:
         from app.utils.coerce import coerce_enum
+
         self.assertEqual(coerce_enum("KG", {"kg", "tons"}), "kg")
 
     def test_coerce_enum_invalid(self) -> None:
         from app.utils.coerce import coerce_enum
+
         self.assertIsNone(coerce_enum("invalid", {"kg", "tons"}))
 
     def test_normalize_phone_valid(self) -> None:
         from app.utils.phone import normalize_phone
+
         self.assertEqual(normalize_phone("+14155551234"), "+14155551234")
 
     def test_normalize_phone_invalid(self) -> None:
         from app.utils.phone import normalize_phone
+
         self.assertIsNone(normalize_phone("555-0100"))
         self.assertIsNone(normalize_phone(None))
 
     def test_quantity_phrase(self) -> None:
         from app.utils.spoken_form import quantity_phrase
+
         self.assertEqual(quantity_phrase(500, "units"), "500 units")
         self.assertEqual(quantity_phrase(None, None), "an unspecified quantity")
         self.assertEqual(quantity_phrase(5, "kg"), "five kg")
 
     def test_email_to_spoken(self) -> None:
         from app.utils.spoken_form import email_to_spoken
+
         self.assertEqual(email_to_spoken("team@vendrsurf.com"), "team at vendrsurf dot com")
 
 

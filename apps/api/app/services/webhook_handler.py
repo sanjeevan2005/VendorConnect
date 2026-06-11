@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import hmac
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
-from supabase import Client
+
+if TYPE_CHECKING:
+    from supabase import Client
 
 logger = logging.getLogger(__name__)
 

@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.config import Settings
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from fastapi import FastAPI, Request, Response
+
+    from app.config import Settings
 
 logger = logging.getLogger(__name__)
 

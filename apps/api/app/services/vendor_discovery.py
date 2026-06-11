@@ -5,11 +5,13 @@ from __future__ import annotations
 import json
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import httpx
-from anthropic import Anthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
+
+if TYPE_CHECKING:
+    import httpx
+    from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 
@@ -106,14 +108,16 @@ def build_search_plan(
     if anthropic_client is None:
         return fallback
 
-    rfq_text = json.dumps({
-        "product_category": product_category,
-        "location": location,
-        "quantity": quantity,
-        "budget_min": budget_min,
-        "budget_max": budget_max,
-        "timeline_weeks": timeline_weeks,
-    })
+    rfq_text = json.dumps(
+        {
+            "product_category": product_category,
+            "location": location,
+            "quantity": quantity,
+            "budget_min": budget_min,
+            "budget_max": budget_max,
+            "timeline_weeks": timeline_weeks,
+        }
+    )
 
     try:
         msg = anthropic_client.messages.create(
@@ -259,17 +263,10 @@ def crust_person_search_for_company(
     title_keywords: list[str],
 ) -> list[dict[str, Any]]:
     """Find people at a specific company via Crust Data person search."""
-    title_conds = [
-        _leaf("experience.employment_details.current.title", "(.)", t)
-        for t in title_keywords
-    ]
-    conds: list[dict[str, Any]] = [
-        _leaf("experience.employment_details.company_id", "=", company_id)
-    ]
+    title_conds = [_leaf("experience.employment_details.current.title", "(.)", t) for t in title_keywords]
+    conds: list[dict[str, Any]] = [_leaf("experience.employment_details.company_id", "=", company_id)]
     if title_conds:
-        conds.append(
-            _group(title_conds, op="or") if len(title_conds) > 1 else title_conds[0]
-        )
+        conds.append(_group(title_conds, op="or") if len(title_conds) > 1 else title_conds[0])
 
     payload = {"filters": _group(conds), "limit": 10}
     try:
@@ -282,7 +279,10 @@ def crust_person_search_for_company(
         try:
             r = client.post(
                 f"{CRUST_BASE}/person/search",
-                json={"filters": _group([_leaf("experience.employment_details.company_id", "=", company_id)]), "limit": 10},
+                json={
+                    "filters": _group([_leaf("experience.employment_details.company_id", "=", company_id)]),
+                    "limit": 10,
+                },
                 headers=headers,
                 timeout=30.0,
             )
@@ -359,15 +359,25 @@ def populate_dummy_vendor(
 
     contact = dict(row.get("contact") or {})
     if not contact.get("name"):
-        contact["name"] = rng.choice([
-            "Alex Chen", "Priya Shah", "Marco Rossi",
-            "Sam Patel", "Rin Tanaka", "Dana Klein",
-        ])
+        contact["name"] = rng.choice(
+            [
+                "Alex Chen",
+                "Priya Shah",
+                "Marco Rossi",
+                "Sam Patel",
+                "Rin Tanaka",
+                "Dana Klein",
+            ]
+        )
     if not contact.get("title"):
-        contact["title"] = rng.choice([
-            "Sales Director", "Head of BD",
-            "Procurement Lead", "Account Executive",
-        ])
+        contact["title"] = rng.choice(
+            [
+                "Sales Director",
+                "Head of BD",
+                "Procurement Lead",
+                "Account Executive",
+            ]
+        )
     contact["email"] = _dummy_email_seeded(rng, row["name"])
     contact["phone"] = _dummy_phone_seeded(rng)
     row["contact"] = contact

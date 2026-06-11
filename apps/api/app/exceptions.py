@@ -7,9 +7,12 @@ without leaking implementation details to callers.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI, Request
 
 logger = logging.getLogger(__name__)
 

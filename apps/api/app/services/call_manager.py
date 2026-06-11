@@ -16,11 +16,7 @@ def build_call_variables(rfq: dict[str, Any], vendor: dict[str, Any]) -> dict[st
     These are all spoken-form strings because Vapi's TTS reads them aloud.
     """
     contact = vendor.get("contact") or {}
-    contact_first_name = (
-        (contact.get("name") or "there").split()[0]
-        if contact.get("name")
-        else "there"
-    )
+    contact_first_name = (contact.get("name") or "there").split()[0] if contact.get("name") else "there"
     certs = rfq.get("certifications") or []
     certs_phrase = ", ".join(certs) if certs else "none"
     buyer_name = rfq.get("workspace_name") or "VendrSurf"
@@ -45,12 +41,7 @@ def build_call_variables(rfq: dict[str, Any], vendor: dict[str, Any]) -> dict[st
 
 def _rfq_one_liner(rfq: dict[str, Any]) -> str:
     """Generate a single-sentence RFQ description."""
-    return (
-        rfq.get("product_description")
-        or rfq.get("product_category")
-        or rfq.get("title")
-        or "a custom part"
-    )
+    return rfq.get("product_description") or rfq.get("product_category") or rfq.get("title") or "a custom part"
 
 
 def _key_constraint(rfq: dict[str, Any]) -> str:

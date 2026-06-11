@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends
 
-from app.config import Settings
 from app.dependencies import get_app_settings, get_supabase_client
 from app.exceptions import ConfigurationError, ResourceNotFoundError, ValidationError
 from app.models.call import CallRequest, CallResponse, CallVendorRequest
 from app.services.call_manager import build_call_variables
 from app.utils.phone import get_vendor_phone
 from vapi import trigger_call
+
+if TYPE_CHECKING:
+    from app.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +48,7 @@ def handle_call_vendor(
     vendor_phone = get_vendor_phone(vendor, settings.vendor_phone_override)
 
     if not vendor_phone:
-        raise ValidationError(
-            "Vendor phone is missing or not E.164. "
-            "Set VENDOR_PHONE_OVERRIDE for demo calls."
-        )
+        raise ValidationError("Vendor phone is missing or not E.164. Set VENDOR_PHONE_OVERRIDE for demo calls.")
 
     try:
         result = trigger_call(

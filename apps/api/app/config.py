@@ -79,11 +79,7 @@ class Settings(BaseSettings):
     @property
     def has_vapi(self) -> bool:
         """Return True if Vapi is fully configured."""
-        return bool(
-            self.vapi_api_key
-            and self.vapi_assistant_id
-            and self.vapi_phone_number_id
-        )
+        return bool(self.vapi_api_key and self.vapi_assistant_id and self.vapi_phone_number_id)
 
     @property
     def has_vapi_webhook_auth(self) -> bool:

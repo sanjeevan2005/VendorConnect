@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 from fastapi import APIRouter, Depends
 
-from app.config import Settings
 from app.dependencies import get_anthropic_client, get_app_settings, get_supabase_client
 from app.exceptions import ConfigurationError, ExternalServiceError
 from app.models.vendor import DiscoverVendorsRequest, DiscoverVendorsResponse, SearchPlan
@@ -25,6 +24,9 @@ from app.services.vendor_discovery import (
 )
 from app.utils.phone import get_vendor_phone
 from vapi import trigger_call
+
+if TYPE_CHECKING:
+    from app.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +68,12 @@ def handle_discover_vendors(
     try:
         with httpx.Client() as client:
             companies = search_companies_multi(
-                client, headers, categories, specialities, req.location, headcount,
+                client,
+                headers,
+                categories,
+                specialities,
+                req.location,
+                headcount,
             )
 
             vendors_out: list[dict[str, Any]] = []
@@ -79,9 +86,7 @@ def handle_discover_vendors(
                 company_id = c.get("crustdata_company_id")
 
                 profiles = (
-                    crust_person_search_for_company(client, headers, company_id, title_keywords)
-                    if company_id
-                    else []
+                    crust_person_search_for_company(client, headers, company_id, title_keywords) if company_id else []
                 )
                 contact = pick_poc(profiles, company_id, title_keywords) if profiles else None
 

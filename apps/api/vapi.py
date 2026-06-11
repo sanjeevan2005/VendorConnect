@@ -156,9 +156,9 @@ def update_assistant(assistant_id: str) -> dict[str, Any]:
 
 
 @retry(
-    stop=stop_after_attempt(3), 
+    stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_not_exception_type((ValueError, RuntimeError))
+    retry=retry_if_not_exception_type((ValueError, RuntimeError)),
 )
 def trigger_call(
     assistant_id: str,
@@ -182,10 +182,18 @@ def trigger_call(
         RuntimeError: If VAPI_PHONE_NUMBER_ID is not set.
     """
     required = [
-        "buyer_company", "buyer_one_liner", "vendor_company",
-        "contact_first_name", "rfq_one_liner", "preferred_process",
-        "preferred_material", "target_quantity_phrase", "eau_phrase",
-        "key_constraint", "required_certifications", "email_followup_contact",
+        "buyer_company",
+        "buyer_one_liner",
+        "vendor_company",
+        "contact_first_name",
+        "rfq_one_liner",
+        "preferred_process",
+        "preferred_material",
+        "target_quantity_phrase",
+        "eau_phrase",
+        "key_constraint",
+        "required_certifications",
+        "email_followup_contact",
     ]
     missing = [k for k in required if k not in variables]
     if missing:
@@ -229,9 +237,11 @@ def trigger_call(
 # =============================================================================
 # Kept here for backward compatibility with the CLI commands below.
 
+
 def handle_webhook(event: dict[str, Any]) -> dict[str, Any] | None:
     """Process a Vapi webhook event. Delegates to the service layer."""
     from app.services.webhook_handler import process_webhook
+
     return process_webhook(event)
 
 
@@ -275,8 +285,7 @@ if __name__ == "__main__":
         test_vars = {
             "buyer_company": "Helios Robotics",
             "buyer_one_liner": (
-                "Helios Robotics builds autonomous warehouse robots - "
-                "headquartered in San Francisco, Series A."
+                "Helios Robotics builds autonomous warehouse robots - headquartered in San Francisco, Series A."
             ),
             "vendor_company": "Precision CNC Inc",
             "contact_first_name": "Alex",
@@ -285,10 +294,7 @@ if __name__ == "__main__":
             "preferred_material": "6061 aluminum",
             "target_quantity_phrase": "five hundred units",
             "eau_phrase": "around ten thousand per year",
-            "key_constraint": (
-                "a bore tolerance of plus or minus two thousandths on the "
-                "main mounting hole"
-            ),
+            "key_constraint": ("a bore tolerance of plus or minus two thousandths on the main mounting hole"),
             "required_certifications": "ISO 9001",
             "email_followup_contact": "kaustubh at vendrsurf dot com",
         }

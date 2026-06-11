@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends
 
-from app.config import Settings
 from app.dependencies import get_anthropic_client, get_app_settings
 from app.models.rfq import ParseRFQRequest, ParseRFQResponse
 from app.services.rfq_parser import parse_rfq
+
+if TYPE_CHECKING:
+    from app.config import Settings
 
 router = APIRouter(tags=["rfq"])
 

@@ -1,4 +1,4 @@
-﻿"""
+"""
 VendrSurf system prompt and analysis plan.
 
 The system prompt is a single coherent prompt that walks the agent through
@@ -431,4 +431,3 @@ FIRST_MESSAGE = (
     "project and {{vendor_company}} came up as a strong potential fit. "
     "Do you have two or three minutes for me to walk through it?"
 )
-
