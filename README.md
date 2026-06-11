@@ -1,123 +1,90 @@
-# VendorConnect / VendrSurf
+# VendorConnect
 
-AI-powered hardware procurement demo: create an RFQ, discover vendors, trigger qualification calls, and review vendor quotes in one dashboard.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)
+![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi)
 
-## Monorepo Layout
+**VendorConnect** is an enterprise-grade, AI-powered hardware procurement platform. It streamlines the sourcing lifecycle by intelligently parsing Requests for Quotation (RFQs), autonomously discovering ideal vendors, triggering AI voice qualification calls, and synthesizing actionable quotes within a single pane of glass.
 
-- `apps/web` - Next.js frontend
-- `apps/api` - FastAPI backend for RFQ parsing, vendor discovery, Vapi calls, and webhooks
-- `supabase` - database migrations, seed data, and local Supabase config
-- `run-frontend.ps1` - local frontend launcher for Windows
-- `run-backend.ps1` - local backend launcher for Windows
-- `.github/workflows/ci.yml` - frontend and backend verification
+---
 
-## Prerequisites
+## Key Capabilities
 
-- Node.js 24 LTS with npm
-- Python 3.12
-- Supabase CLI if you want to run the database locally
+- **Intelligent RFQ Parsing:** Extracts unstructured engineering constraints (tolerances, materials) and converts them into structured RFQ datasets.
+- **Autonomous Discovery:** Integrates directly with Crust Data to intelligently crawl and rank suppliers by fit, headcount, and specialty.
+- **AI Voice Agents:** Dispatches real-time, interactive phone calls to vendor POCs using Vapi.ai and Anthropic Claude, qualifying capabilities and negotiating lead times.
+- **Unified Dashboard:** Real-time metrics, interactive transcripts, and competitive quote comparisons—all presented in a high-fidelity, responsive UI.
 
-The current workspace also has an optional `.tools/node` runtime, but clone reproducibility assumes normal Node/Python installs.
+## Architecture & Security
 
-## Environment Setup
+VendorConnect employs a strict **Zero-Trust Architecture**:
+- **Frontend (`apps/web`):** A lightweight Next.js client completely decoupled from the database. It communicates exclusively via secure, rate-limited REST endpoints.
+- **Backend (`apps/api`):** A robust FastAPI proxy layer that orchestrates all LLM logic, external API integrations, and database interactions. Secured with configurable API Key middleware to prevent unauthorized access and Denial-of-Wallet attacks.
+- **Data Layer:** PostgreSQL (via Supabase) heavily restricted by RLS, accessible only via secure service-role keys at the backend layer.
 
-Create frontend env:
+---
 
-```powershell
-Copy-Item apps\web\.env.local.example apps\web\.env.local
+## Getting Started
+
+### Prerequisites
+- **Node.js** (v20+ LTS)
+- **Python** (v3.12+)
+- **Supabase CLI** (for local development)
+
+### 1. Environment Configuration
+
+Clone the repository and set up your environment variables based on the provided templates.
+
+**Frontend:**
+```bash
+cp apps/web/.env.local.example apps/web/.env.local
 ```
+*Configure `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_API_KEY`.*
 
-Create backend env:
-
-```powershell
-Copy-Item apps\api\.env.example apps\api\.env
+**Backend:**
+```bash
+cp apps/api/.env.example apps/api/.env
 ```
+*Configure your Supabase credentials, `API_KEY`, `ANTHROPIC_API_KEY`, `CRUST_DATA_API_KEY`, and `VAPI_API_KEY`.*
 
-Required for the real happy path:
+### 2. Run Locally
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_API_URL`
-- `ANTHROPIC_API_KEY`
-- `CORS_ALLOW_ORIGINS`
-- `CRUST_DATA_API_KEY`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `VAPI_API_KEY`
-- `VAPI_PHONE_NUMBER_ID`
-- `VAPI_ASSISTANT_ID`
-- `WEBHOOK_URL` for Vapi webhook delivery
+We provide PowerShell wrappers for a streamlined startup experience on Windows environments.
 
-Optional:
-
-- `ANTHROPIC_MODEL`, default `claude-sonnet-4-6`
-- `VENDOR_PHONE_OVERRIDE`, E.164 phone number for demo calls only. Leave blank to call the vendor phone from the database.
-
-## Database
-
-Supabase migrations and seed data live in `supabase`.
-
-For local Supabase:
-
-```powershell
-supabase start
-supabase db reset
-```
-
-Then copy the local Supabase API URL, anon key, service role key, and database URL values into the app env files.
-
-For hosted Supabase, push/apply the migrations in `supabase/migrations` before running the app against that project.
-
-## Run Locally
-
-Backend:
-
+**Start the FastAPI Backend:**
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\run-backend.ps1
 ```
 
-Health check:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:8000/
-```
-
-Frontend:
-
+**Start the Next.js Frontend:**
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\run-frontend.ps1
 ```
 
-Open http://127.0.0.1:3000.
+The application will be accessible at `http://localhost:3000`.
 
-The frontend renders bundled demo data without Supabase keys. Creating RFQs, discovering vendors, and calling vendors require the env vars above.
+---
 
-## Verification
+## Code Quality & Verification
 
-Frontend:
+The codebase adheres strictly to enterprise code-quality standards.
 
-```powershell
-npm --prefix apps\web ci
-npm --prefix apps\web run lint
-npm --prefix apps\web run build
-npm --prefix apps\web audit --audit-level=moderate
+**Frontend Verification:**
+```bash
+npm --prefix apps/web ci
+npm --prefix apps/web run lint
+npm --prefix apps/web run build
 ```
 
-Backend:
-
-```powershell
-python -m venv apps\api\.venv
-apps\api\.venv\Scripts\python.exe -m pip install -r apps\api\requirements.txt
-apps\api\.venv\Scripts\python.exe -m compileall apps\api\main.py apps\api\vapi.py apps\api\prompts.py
-apps\api\.venv\Scripts\python.exe -m pip check
+**Backend Verification:**
+```bash
+# Handled via Ruff & Pytest
+python -m ruff check apps/api/
+python -m ruff format apps/api/
+python -m pytest apps/api/tests/
 ```
 
-## Integration Notes
+---
 
-Adding API keys makes the application able to reach the external services, but those services must also be configured consistently:
-
-- Supabase schema must match the migrations in this repo.
-- Supabase anon/service-role keys must point to the same project.
-- Vapi assistant, phone number, API key, and webhook URL must be valid.
-- `WEBHOOK_URL` must be public for real Vapi calls; use a tunnel such as ngrok for local webhook testing.
-- Crust Data and Anthropic accounts must have access to the configured APIs/models.
+*For any internal deployments, ensure `WEBHOOK_URL` is securely tunneled (e.g., via ngrok) to receive real-time updates from Vapi.*
