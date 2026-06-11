@@ -39,7 +39,7 @@ class Settings(BaseSettings):
 
     # --- CORS ---
     cors_allow_origins: list[str] = Field(
-        default=["*"],
+        default=["http://localhost:3000"],
         description="Comma-separated list of allowed CORS origins.",
     )
 
@@ -60,7 +60,7 @@ class Settings(BaseSettings):
             return [s.strip() for s in v.split(",") if s.strip()]
         if isinstance(v, list):
             return v
-        return ["*"]
+        return ["http://localhost:3000"]
 
     # --- Convenience predicates ---
 

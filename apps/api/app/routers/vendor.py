@@ -152,3 +152,23 @@ def handle_discover_vendors(
             "Crust Data",
             f"{e.response.status_code}: {e.response.text[:200]}",
         ) from e
+
+
+@router.get("/vendors/{vendor_id}")
+def get_vendor(
+    vendor_id: str,
+    settings: Settings = Depends(get_app_settings),
+) -> dict[str, Any]:
+    """Fetch a single vendor, its thread events, and call events."""
+    sb = get_supabase_client(settings)
+    
+    v_res = sb.table("vendors").select("*").eq("id", vendor_id).maybeSingle().execute()
+    e_res = sb.table("thread_events").select("*").eq("vendor_id", vendor_id).order("created_at", desc=False).execute()
+    c_res = sb.table("call_events").select("*").eq("vendor_id", vendor_id).order("created_at", desc=False).execute()
+
+    return {
+        "vendor": v_res.data,
+        "thread_events": e_res.data,
+        "call_events": c_res.data
+    }
+

@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { supabase } from "@/lib/supabase";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 import { DASHBOARD_RFQS } from "@/lib/data";
 import { Icons } from "@/components/icons";
 import { DashboardStats } from "../dashboard/dashboard-stats";
@@ -19,10 +19,11 @@ interface RfqRow {
 
 export function Dashboard({ onOpenRfq, onNewRfq }: { onOpenRfq: (id: string) => void; onNewRfq: () => void }) {
   const fetcher = async () => {
-    if (!supabase) return DASHBOARD_RFQS;
-    const { data, error } = await supabase.from("rfqs").select("*");
-    if (error) throw error;
-    if (!data || data.length === 0) return DASHBOARD_RFQS;
+    try {
+      const r = await fetch(`${API_URL}/api/rfqs`);
+      if (!r.ok) return DASHBOARD_RFQS;
+      const { data } = await r.json();
+      if (!data || data.length === 0) return DASHBOARD_RFQS;
     
     return data.map((r: RfqRow) => ({
       id: r.id,
@@ -35,6 +36,9 @@ export function Dashboard({ onOpenRfq, onNewRfq }: { onOpenRfq: (id: string) => 
       target: r.target_unit ?? r.target_unit_price,
       bestQuote: null as number | null,
     }));
+    } catch {
+      return DASHBOARD_RFQS;
+    }
   };
 
   const { data: rfqs, isLoading: loading } = useSWR("rfqs", fetcher, {

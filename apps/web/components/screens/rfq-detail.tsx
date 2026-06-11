@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useSWR from "swr";
-import { supabase } from "@/lib/supabase";
+
 import { RFQ_DATA, VENDORS } from "@/lib/data";
 import { VendorSchema, Vendor } from "@/lib/types";
 import { RfqHeader } from "../rfq/rfq-header";
@@ -35,18 +35,14 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
   const isFixture = rfqId === RFQ_DATA.id;
 
   const fetcher = async () => {
-    if (!supabase) return { rfqRow: null, vendors: isFixture ? VENDORS : [] };
-
-    const [rRes, vRes] = await Promise.all([
-      supabase.from("rfqs").select("*").eq("id", rfqId).maybeSingle(),
-      supabase.from("vendors").select("*").eq("rfq_id", rfqId)
-    ]);
-
-    const rfqRow = rRes.data as RfqRow | null;
+    try {
+      const r = await fetch(`${API_URL}/api/rfqs/${rfqId}`);
+      if (!r.ok) return { rfqRow: null, vendors: isFixture ? VENDORS : [] };
+      const { rfqRow, vendors } = await r.json();
     
     let parsedVendors: Vendor[] = [];
-    if (vRes.data && vRes.data.length > 0) {
-      parsedVendors = vRes.data.map(v => {
+    if (vendors && vendors.length > 0) {
+      parsedVendors = vendors.map((v: any) => {
         const res = VendorSchema.safeParse(v);
         return res.success ? (res.data as Vendor) : (v as unknown as Vendor);
       });
@@ -55,6 +51,9 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
     }
 
     return { rfqRow, vendors: parsedVendors };
+    } catch {
+      return { rfqRow: null, vendors: isFixture ? VENDORS : [] };
+    }
   };
 
   const { data, isLoading, mutate } = useSWR(`rfq-${rfqId}`, fetcher, { refreshInterval: 5000 });

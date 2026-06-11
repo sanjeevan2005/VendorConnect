@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { supabase } from "@/lib/supabase";
 import { VENDORS, RFQ_DATA, THREAD_EVENTS } from "@/lib/data";
 import { Icons } from "@/components/icons";
 import { ThreadEventCard } from "../vendor/thread-event-card";
@@ -20,28 +19,25 @@ export function VendorDetail({ vendorId, onBack }: { vendorId: string; onBack: (
   const [callMsg, setCallMsg] = useState<string | null>(null);
 
   const fetcher = async () => {
-    if (!supabase) return { vendor: VENDORS.find(v => v.id === vendorId) || VENDORS[0], events: THREAD_EVENTS, callComplete: null };
-
-    const [vRes, eRes, cRes] = await Promise.all([
-      supabase.from("vendors").select("*").eq("id", vendorId).maybeSingle(),
-      supabase.from("thread_events").select("*").eq("vendor_id", vendorId).order("created_at", { ascending: true }),
-      supabase.from("call_events").select("*").eq("vendor_id", vendorId).order("created_at", { ascending: true }),
-    ]);
+    try {
+      const r = await fetch(`${API_URL}/api/vendors/${vendorId}`);
+      if (!r.ok) return { vendor: VENDORS.find(v => v.id === vendorId) || VENDORS[0], events: THREAD_EVENTS, callComplete: null };
+      const { vendor, thread_events, call_events } = await r.json();
 
     // Validate the vendor with Zod
     let validatedVendor = null;
-    if (vRes.data) {
-      const result = VendorSchema.safeParse(vRes.data);
+    if (vendor) {
+      const result = VendorSchema.safeParse(vendor);
       if (result.success) {
         validatedVendor = result.data as Vendor;
       } else {
         console.error("Zod validation failed for Vendor:", result.error);
-        validatedVendor = vRes.data as unknown as Vendor; // Fallback
+        validatedVendor = vendor as unknown as Vendor; // Fallback
       }
     }
 
-    const thread = (eRes.data ?? []);
-    const callEvs = (cRes.data ?? []);
+    const thread = (thread_events ?? []);
+    const callEvs = (call_events ?? []);
     
     let callComplete = null;
     const completedEv = callEvs.find((ce) => ce.event_type === "call_complete");
@@ -86,6 +82,9 @@ export function VendorDetail({ vendorId, onBack }: { vendorId: string; onBack: (
       events: [...thread, ...callEventCards],
       callComplete
     };
+    } catch {
+      return { vendor: VENDORS.find(v => v.id === vendorId) || VENDORS[0], events: THREAD_EVENTS, callComplete: null };
+    }
   };
 
   const { data } = useSWR(`vendor-${vendorId}`, fetcher, { refreshInterval: 5000 });

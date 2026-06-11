@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 
 class CallRequest(BaseModel):
     """Request body for POST /api/call (generic call trigger)."""
+    model_config = {"extra": "forbid"}
+
 
     assistant_id: str
     vendor_phone: str = Field(..., description="E.164 format, e.g. +14155551234")
@@ -32,6 +34,8 @@ class CallRequest(BaseModel):
 
 class CallVendorRequest(BaseModel):
     """Request body for POST /api/call-vendor (DB-backed call trigger)."""
+    model_config = {"extra": "forbid"}
+
 
     rfq_id: str = Field(..., min_length=1)
     vendor_id: str = Field(..., min_length=1)
@@ -39,6 +43,8 @@ class CallVendorRequest(BaseModel):
 
 class CallResponse(BaseModel):
     """Response body for call trigger endpoints."""
+    model_config = {"extra": "forbid"}
+
 
     call_id: str
     status: str = "triggered"
@@ -47,6 +53,8 @@ class CallResponse(BaseModel):
 
 class WebhookResponse(BaseModel):
     """Response body for POST /vapi/webhook."""
+    model_config = {"extra": "forbid"}
+
 
     received: bool = True
     event: str | None = None
