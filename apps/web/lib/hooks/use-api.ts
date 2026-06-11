@@ -28,7 +28,9 @@ export function useApi<T>() {
         const apiKey = process.env.NEXT_PUBLIC_API_KEY;
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
-          ...options.headers,
+          ...(typeof options.headers === "object" && options.headers !== null
+            ? Object.fromEntries(new Headers(options.headers).entries())
+            : {}),
         };
         
         if (apiKey) {

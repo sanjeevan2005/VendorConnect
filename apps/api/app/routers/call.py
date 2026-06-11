@@ -1,9 +1,7 @@
 """Call trigger endpoints."""
 
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 
@@ -16,8 +14,7 @@ from app.services.call_manager import build_call_variables
 from app.utils.phone import get_vendor_phone
 from vapi import trigger_call
 
-if TYPE_CHECKING:
-    from app.config import Settings
+from app.config import Settings
 
 logger = logging.getLogger(__name__)
 

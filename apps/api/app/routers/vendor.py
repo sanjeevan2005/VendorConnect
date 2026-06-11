@@ -1,10 +1,8 @@
 """Vendor discovery endpoint."""
 
-from __future__ import annotations
-
 import logging
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, Request
@@ -27,8 +25,7 @@ from app.services.vendor_discovery import (
 from app.utils.phone import get_vendor_phone
 from vapi import trigger_call
 
-if TYPE_CHECKING:
-    from app.config import Settings
+from app.config import Settings
 
 
 logger = logging.getLogger(__name__)

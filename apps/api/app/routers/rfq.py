@@ -1,8 +1,6 @@
 """RFQ parsing endpoint."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 
@@ -12,8 +10,7 @@ from app.models.rfq import CreateRFQRequest, ParseRFQRequest, ParseRFQResponse
 from app.rate_limiter import limiter
 from app.services.rfq_parser import parse_rfq
 
-if TYPE_CHECKING:
-    from app.config import Settings
+from app.config import Settings
 
 
 router = APIRouter(tags=["rfq"])

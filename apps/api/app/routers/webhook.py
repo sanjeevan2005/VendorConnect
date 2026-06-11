@@ -1,8 +1,6 @@
 """Vapi webhook endpoint."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
@@ -16,10 +14,8 @@ from app.services.webhook_handler import (
     verify_vapi_signature,
 )
 
-if TYPE_CHECKING:
-    from supabase import Client
-
-    from app.config import Settings
+from supabase import Client
+from app.config import Settings
 
 router = APIRouter(tags=["webhooks"])
 

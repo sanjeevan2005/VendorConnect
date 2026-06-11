@@ -11,8 +11,7 @@ from fastapi.security import APIKeyHeader
 
 from app.dependencies import get_app_settings
 
-if TYPE_CHECKING:
-    from app.config import Settings
+from app.config import Settings
 
 logger = logging.getLogger(__name__)
 
