@@ -26,7 +26,7 @@ export const RFQ_DATA = {
   ],
 };
 
-import { Vendor, VendorStatus } from "./types";
+import { Vendor } from "./types";
 
 export const VENDORS: Vendor[] = [
   {

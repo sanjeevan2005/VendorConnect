@@ -88,7 +88,7 @@ export function VendorDetail({ vendorId, onBack }: { vendorId: string; onBack: (
     };
   };
 
-  const { data, isLoading } = useSWR(`vendor-${vendorId}`, fetcher, { refreshInterval: 5000 });
+  const { data } = useSWR(`vendor-${vendorId}`, fetcher, { refreshInterval: 5000 });
 
   const vendor = data?.vendor ?? VENDORS.find(v => v.id === vendorId) ?? VENDORS[0];
   const events = data?.events ?? THREAD_EVENTS;

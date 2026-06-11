@@ -1,7 +1,19 @@
 import { StatusChip } from "@/components/status-chip";
 
+export interface DashboardRfqRow {
+  id: string;
+  title: string;
+  qty: number;
+  status: string;
+  vendors: number;
+  quotes: number;
+  target: number | null;
+  bestQuote: number | null;
+  created: string;
+}
+
 interface RfqListProps {
-  rfqs: any[];
+  rfqs: DashboardRfqRow[];
   isLoading: boolean;
   onOpenRfq: (id: string) => void;
 }
