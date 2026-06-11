@@ -170,6 +170,6 @@ def get_vendor(
     return {
         "vendor": v_res.data,
         "thread_events": e_res.data,
-        "call_events": c_res.data
+        "call_events": c_res.data,
     }
 
