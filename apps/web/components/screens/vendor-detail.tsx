@@ -5,11 +5,11 @@ import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
 import { VENDORS, RFQ_DATA, THREAD_EVENTS } from "@/lib/data";
 import { Icons } from "@/components/icons";
-import { ThreadEventCard } from "./vendor/thread-event-card";
-import { TranscriptViewer } from "./vendor/transcript-viewer";
-import { DraftComposer } from "./vendor/draft-composer";
-import { VendorStats } from "./vendor/vendor-stats";
-import { VendorHeader } from "./vendor/vendor-header";
+import { ThreadEventCard } from "../vendor/thread-event-card";
+import { TranscriptViewer } from "../vendor/transcript-viewer";
+import { DraftComposer } from "../vendor/draft-composer";
+import { VendorStats } from "../vendor/vendor-stats";
+import { VendorHeader } from "../vendor/vendor-header";
 import { VendorSchema, Vendor } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
