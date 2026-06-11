@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { DASHBOARD_RFQS } from "@/lib/data";
+import { DashboardRFQ } from "@/lib/types";
 import { Icons } from "@/components/icons";
 import { DashboardStats } from "../dashboard/dashboard-stats";
 import { RfqList } from "../dashboard/rfq-list";
@@ -47,9 +48,9 @@ export function Dashboard({ onOpenRfq, onNewRfq }: { onOpenRfq: (id: string) => 
     refreshInterval: 5000,
   });
 
-  const active = rfqs.filter((r) => r.status === "active");
-  const totalVendors = rfqs.reduce((a, r) => a + r.vendors, 0);
-  const totalQuotes = rfqs.reduce((a, r) => a + r.quotes, 0);
+  const active = rfqs.filter((r: DashboardRFQ) => r.status === "active");
+  const totalVendors = rfqs.reduce((a: number, r: DashboardRFQ) => a + r.vendors, 0);
+  const totalQuotes = rfqs.reduce((a: number, r: DashboardRFQ) => a + r.quotes, 0);
   const liveCalls = 2;
 
   return (

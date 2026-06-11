@@ -161,7 +161,7 @@ def get_vendor(
 ) -> dict[str, Any]:
     """Fetch a single vendor, its thread events, and call events."""
     sb = get_supabase_client(settings)
-    
+
     v_res = sb.table("vendors").select("*").eq("id", vendor_id).maybeSingle().execute()
     e_res = sb.table("thread_events").select("*").eq("vendor_id", vendor_id).order("created_at", desc=False).execute()
     c_res = sb.table("call_events").select("*").eq("vendor_id", vendor_id).order("created_at", desc=False).execute()

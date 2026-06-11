@@ -7,12 +7,11 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_anthropic_client, get_app_settings, get_supabase_client
-from app.models.rfq import ParseRFQRequest, ParseRFQResponse, CreateRFQRequest
+from app.models.rfq import CreateRFQRequest, ParseRFQRequest, ParseRFQResponse
 from app.services.rfq_parser import parse_rfq
 
 if TYPE_CHECKING:
     from app.config import Settings
-    from supabase import Client
 
 router = APIRouter(tags=["rfq"])
 
