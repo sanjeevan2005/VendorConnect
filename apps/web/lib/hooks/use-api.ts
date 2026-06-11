@@ -25,12 +25,19 @@ export function useApi<T>() {
       setState((s) => ({ ...s, loading: true, error: null }));
       
       try {
+        const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          ...options.headers,
+        };
+        
+        if (apiKey) {
+          headers["X-API-Key"] = apiKey;
+        }
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
           ...options,
-          headers: {
-            "Content-Type": "application/json",
-            ...options.headers,
-          },
+          headers,
         });
 
         if (!response.ok) {

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
 
+import { POLL_INTERVAL_MS } from "@/lib/constants";
+import { fetchWithAuth } from "@/lib/fetch";
 import { RFQ_DATA, VENDORS } from "@/lib/data";
 import { VendorSchema, Vendor } from "@/lib/types";
 import { RfqHeader } from "../rfq/rfq-header";
@@ -36,7 +38,7 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
 
   const fetcher = async () => {
     try {
-      const r = await fetch(`${API_URL}/api/rfqs/${rfqId}`);
+      const r = await fetchWithAuth(`${API_URL}/api/rfqs/${rfqId}`);
       if (!r.ok) return { rfqRow: null, vendors: isFixture ? VENDORS : [] };
       const { rfqRow, vendors } = await r.json();
     
@@ -113,7 +115,7 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
     setCallingId(vendorId);
     setCallMsg((m) => ({ ...m, [vendorId]: "" }));
     try {
-      const r = await fetch(`${API_URL}/api/call-vendor`, {
+      const r = await fetchWithAuth(`${API_URL}/api/call-vendor`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ rfq_id: rfqId, vendor_id: vendorId }),

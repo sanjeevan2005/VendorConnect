@@ -7,11 +7,13 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
+from app.auth import verify_api_key
 from app.dependencies import get_anthropic_client, get_app_settings, get_supabase_client
 from app.exceptions import ConfigurationError, ExternalServiceError
 from app.models.vendor import DiscoverVendorsRequest, DiscoverVendorsResponse, SearchPlan
+from app.rate_limiter import limiter
 from app.services.call_manager import build_call_variables
 from app.services.vendor_discovery import (
     _crust_headers,
@@ -34,8 +36,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["vendors"])
 
 
-@router.post("/discover-vendors", response_model=DiscoverVendorsResponse)
+@router.post("/discover-vendors", response_model=DiscoverVendorsResponse, dependencies=[Depends(verify_api_key)])
+@limiter.limit("10/minute")
 def handle_discover_vendors(
+    request: Request,
     req: DiscoverVendorsRequest,
     settings: Settings = Depends(get_app_settings),
 ) -> DiscoverVendorsResponse:
@@ -155,8 +159,10 @@ def handle_discover_vendors(
         ) from e
 
 
-@router.get("/vendors/{vendor_id}")
+@router.get("/vendors/{vendor_id}", dependencies=[Depends(verify_api_key)])
+@limiter.limit("50/minute")
 def get_vendor(
+    request: Request,
     vendor_id: str,
     settings: Settings = Depends(get_app_settings),
 ) -> dict[str, Any]:

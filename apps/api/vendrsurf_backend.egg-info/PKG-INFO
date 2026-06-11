@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: vendrsurf-backend
+Version: 1.0.0
+Summary: AI-powered hardware procurement backend
+Requires-Python: >=3.12

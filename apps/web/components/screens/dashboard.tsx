@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { DASHBOARD_RFQS } from "@/lib/data";
 import { DashboardRFQ } from "@/lib/types";
 import { Icons } from "@/components/icons";
+import { fetchWithAuth } from "@/lib/fetch";
 import { DashboardStats } from "../dashboard/dashboard-stats";
 import { RfqList } from "../dashboard/rfq-list";
 
@@ -22,7 +23,7 @@ interface RfqRow {
 export function Dashboard({ onOpenRfq, onNewRfq }: { onOpenRfq: (id: string) => void; onNewRfq: () => void }) {
   const fetcher = async () => {
     try {
-      const r = await fetch(`${API_URL}/api/rfqs`);
+      const r = await fetchWithAuth(`${API_URL}/api/rfqs`);
       if (!r.ok) return DASHBOARD_RFQS;
       const { data } = await r.json();
       if (!data || data.length === 0) return DASHBOARD_RFQS;

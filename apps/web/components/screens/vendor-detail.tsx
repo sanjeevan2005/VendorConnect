@@ -3,6 +3,8 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { VENDORS, RFQ_DATA, THREAD_EVENTS } from "@/lib/data";
+import { POLL_INTERVAL_MS } from "@/lib/constants";
+import { fetchWithAuth } from "@/lib/fetch";
 import { Icons } from "@/components/icons";
 import { ThreadEventCard } from "../vendor/thread-event-card";
 import { TranscriptViewer } from "../vendor/transcript-viewer";
@@ -20,7 +22,7 @@ export function VendorDetail({ vendorId, onBack }: { vendorId: string; onBack: (
 
   const fetcher = async () => {
     try {
-      const r = await fetch(`${API_URL}/api/vendors/${vendorId}`);
+      const r = await fetchWithAuth(`${API_URL}/api/vendors/${vendorId}`);
       if (!r.ok) return { vendor: VENDORS.find(v => v.id === vendorId) || VENDORS[0], events: THREAD_EVENTS, callComplete: null };
       const { vendor, thread_events, call_events } = await r.json();
 
@@ -98,7 +100,7 @@ export function VendorDetail({ vendorId, onBack }: { vendorId: string; onBack: (
     if (!vendor?.rfq_id) { setCallMsg("No RFQ linked to this vendor."); return; }
     setCalling(true); setCallMsg(null);
     try {
-      const r = await fetch(`${API_URL}/api/call-vendor`, {
+      const r = await fetchWithAuth(`${API_URL}/api/call-vendor`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ rfq_id: vendor.rfq_id, vendor_id: vendor.id }),

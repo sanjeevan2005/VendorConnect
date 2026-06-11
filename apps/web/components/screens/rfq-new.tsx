@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icons } from "@/components/icons";
+import { fetchWithAuth } from "@/lib/fetch";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -106,7 +107,7 @@ export function RfqNew({ onBack, onCreated }: { onBack: () => void; onCreated: (
       recurring: fields.recurring,
     };
     try {
-      const dbRes = await fetch(`${API_URL}/api/rfqs`, {
+      const dbRes = await fetchWithAuth(`${API_URL}/api/rfqs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(row),
@@ -122,7 +123,7 @@ export function RfqNew({ onBack, onCreated }: { onBack: () => void; onCreated: (
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/discover-vendors`, {
+      const res = await fetchWithAuth(`${API_URL}/api/discover-vendors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

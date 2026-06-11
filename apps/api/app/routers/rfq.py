@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
+from app.auth import verify_api_key
 from app.dependencies import get_anthropic_client, get_app_settings, get_supabase_client
 from app.models.rfq import CreateRFQRequest, ParseRFQRequest, ParseRFQResponse
+from app.rate_limiter import limiter
 from app.services.rfq_parser import parse_rfq
 
 if TYPE_CHECKING:
@@ -17,8 +19,10 @@ if TYPE_CHECKING:
 router = APIRouter(tags=["rfq"])
 
 
-@router.post("/parse-rfq", response_model=ParseRFQResponse)
+@router.post("/parse-rfq", response_model=ParseRFQResponse, dependencies=[Depends(verify_api_key)])
+@limiter.limit("10/minute")
 def handle_parse_rfq(
+    request: Request,
     req: ParseRFQRequest,
     settings: Settings = Depends(get_app_settings),
 ) -> ParseRFQResponse:
@@ -28,8 +32,10 @@ def handle_parse_rfq(
     return ParseRFQResponse(fields=fields)
 
 
-@router.get("/rfqs")
+@router.get("/rfqs", dependencies=[Depends(verify_api_key)])
+@limiter.limit("50/minute")
 def list_rfqs(
+    request: Request,
     settings: Settings = Depends(get_app_settings),
 ) -> dict[str, Any]:
     """Fetch all RFQs (Replacing frontend Supabase query)."""
@@ -38,8 +44,10 @@ def list_rfqs(
     return {"data": res.data}
 
 
-@router.post("/rfqs")
+@router.post("/rfqs", dependencies=[Depends(verify_api_key)])
+@limiter.limit("50/minute")
 def create_rfq(
+    request: Request,
     req: CreateRFQRequest,
     settings: Settings = Depends(get_app_settings),
 ) -> dict[str, Any]:
@@ -50,8 +58,10 @@ def create_rfq(
     return {"data": res.data}
 
 
-@router.get("/rfqs/{rfq_id}")
+@router.get("/rfqs/{rfq_id}", dependencies=[Depends(verify_api_key)])
+@limiter.limit("50/minute")
 def get_rfq(
+    request: Request,
     rfq_id: str,
     settings: Settings = Depends(get_app_settings),
 ) -> dict[str, Any]:

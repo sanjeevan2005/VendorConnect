@@ -41,7 +41,7 @@ async def handle_vapi_webhook(
     if settings.has_vapi_webhook_auth:
         if not x_vapi_secret:
             raise HTTPException(status_code=401, detail="Missing Vapi signature header")
-        if not verify_vapi_signature(payload, x_vapi_secret, settings.vapi_webhook_secret or ""):
+        if not verify_vapi_signature(x_vapi_secret, settings.vapi_webhook_secret or ""):
             raise HTTPException(status_code=401, detail="Invalid Vapi signature")
 
     result = process_webhook(payload)

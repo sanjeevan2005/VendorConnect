@@ -5,11 +5,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
+from app.auth import verify_api_key
 from app.dependencies import get_app_settings, get_supabase_client
 from app.exceptions import ConfigurationError, ResourceNotFoundError, ValidationError
 from app.models.call import CallRequest, CallResponse, CallVendorRequest
+from app.rate_limiter import limiter
 from app.services.call_manager import build_call_variables
 from app.utils.phone import get_vendor_phone
 from vapi import trigger_call
@@ -22,8 +24,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["calls"])
 
 
-@router.post("/call-vendor", response_model=CallResponse)
+@router.post("/call-vendor", response_model=CallResponse, dependencies=[Depends(verify_api_key)])
+@limiter.limit("50/minute")
 def handle_call_vendor(
+    request: Request,
     req: CallVendorRequest,
     settings: Settings = Depends(get_app_settings),
 ) -> CallResponse:
@@ -75,8 +79,10 @@ def handle_call_vendor(
     return CallResponse(call_id=call_id)
 
 
-@router.post("/call", response_model=CallResponse)
+@router.post("/call", response_model=CallResponse, dependencies=[Depends(verify_api_key)])
+@limiter.limit("50/minute")
 def handle_make_call(
+    request: Request,
     req: CallRequest,
     settings: Settings = Depends(get_app_settings),
 ) -> CallResponse:

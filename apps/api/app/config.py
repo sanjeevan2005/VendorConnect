@@ -37,10 +37,14 @@ class Settings(BaseSettings):
         description="Public URL for Vapi webhook delivery.",
     )
 
-    # --- CORS ---
+    # --- CORS & Auth ---
     cors_allow_origins: list[str] = Field(
         default=["http://localhost:3000"],
         description="Comma-separated list of allowed CORS origins.",
+    )
+    api_key: str = Field(
+        default="",
+        description="Static API key required to access core endpoints (optional).",
     )
 
     # --- Demo / override ---
