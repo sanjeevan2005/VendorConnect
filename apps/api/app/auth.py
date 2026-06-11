@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import hmac
 import logging
-from typing import TYPE_CHECKING
 
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import APIKeyHeader
 
+from app.config import Settings  # noqa: TC001
 from app.dependencies import get_app_settings
-
-from app.config import Settings
 
 logger = logging.getLogger(__name__)
 

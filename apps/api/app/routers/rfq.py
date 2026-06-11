@@ -5,13 +5,11 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request
 
 from app.auth import verify_api_key
+from app.config import Settings
 from app.dependencies import get_anthropic_client, get_app_settings, get_supabase_client
 from app.models.rfq import CreateRFQRequest, ParseRFQRequest, ParseRFQResponse
 from app.rate_limiter import limiter
 from app.services.rfq_parser import parse_rfq
-
-from app.config import Settings
-
 
 router = APIRouter(tags=["rfq"])
 

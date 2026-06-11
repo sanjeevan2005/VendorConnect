@@ -8,6 +8,7 @@ import httpx
 from fastapi import APIRouter, Depends, Request
 
 from app.auth import verify_api_key
+from app.config import Settings
 from app.dependencies import get_anthropic_client, get_app_settings, get_supabase_client
 from app.exceptions import ConfigurationError, ExternalServiceError
 from app.models.vendor import DiscoverVendorsRequest, DiscoverVendorsResponse, SearchPlan
@@ -24,9 +25,6 @@ from app.services.vendor_discovery import (
 )
 from app.utils.phone import get_vendor_phone
 from vapi import trigger_call
-
-from app.config import Settings
-
 
 logger = logging.getLogger(__name__)
 

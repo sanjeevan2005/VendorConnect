@@ -3,7 +3,9 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from supabase import Client
 
+from app.config import Settings
 from app.dependencies import get_app_settings, get_optional_supabase_client
 from app.models.call import WebhookResponse
 from app.services.webhook_handler import (
@@ -13,9 +15,6 @@ from app.services.webhook_handler import (
     process_webhook,
     verify_vapi_signature,
 )
-
-from supabase import Client
-from app.config import Settings
 
 router = APIRouter(tags=["webhooks"])
 

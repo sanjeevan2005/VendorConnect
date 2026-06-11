@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request
 
 from app.auth import verify_api_key
+from app.config import Settings
 from app.dependencies import get_app_settings, get_supabase_client
 from app.exceptions import ConfigurationError, ResourceNotFoundError, ValidationError
 from app.models.call import CallRequest, CallResponse, CallVendorRequest
@@ -13,8 +14,6 @@ from app.rate_limiter import limiter
 from app.services.call_manager import build_call_variables
 from app.utils.phone import get_vendor_phone
 from vapi import trigger_call
-
-from app.config import Settings
 
 logger = logging.getLogger(__name__)
 
