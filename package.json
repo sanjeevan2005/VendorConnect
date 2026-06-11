@@ -1,0 +1,11 @@
+{
+  "name": "vendorconnect",
+  "private": true,
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000",
+    "build:web": "npm --prefix apps/web run build",
+    "lint:web": "npm --prefix apps/web run lint",
+    "audit:web": "npm --prefix apps/web audit --audit-level=moderate",
+    "install:web": "npm --prefix apps/web ci"
+  }
+}
