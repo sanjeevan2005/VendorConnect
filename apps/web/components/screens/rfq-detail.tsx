@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
-import { RFQ_DATA, VENDORS, Vendor } from "@/lib/data";
+import { RFQ_DATA, VENDORS } from "@/lib/data";
 import { StatusChip } from "@/components/status-chip";
 import { Icons } from "@/components/icons";
-import { VendorSchema } from "@/lib/types";
+import { VendorSchema, Vendor } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 

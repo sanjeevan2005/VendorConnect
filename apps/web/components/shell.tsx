@@ -2,7 +2,7 @@
 
 import { CURRENT_USER, WORKSPACE } from "@/lib/data";
 import { Icons, Logo } from "./icons";
-import { VendorStatus } from "@/lib/data";
+import { VendorStatus } from "@/lib/types";
 
 export function Sidebar({ onHome, onNewRfq }: { onHome: () => void; onNewRfq: () => void }) {
   return (

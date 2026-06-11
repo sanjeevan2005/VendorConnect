@@ -1,4 +1,4 @@
-﻿export const CURRENT_USER = { name: "Sam Patel", email: "sam@blackbird-robotics.com", initials: "SP" };
+export const CURRENT_USER = { name: "Sam Patel", email: "sam@blackbird-robotics.com", initials: "SP" };
 export const WORKSPACE = { name: "Blackbird Robotics", initials: "BR" };
 
 export const RFQ_DATA = {
@@ -26,134 +26,103 @@ export const RFQ_DATA = {
   ],
 };
 
-export type VendorStatus =
-  | "discovered"
-  | "calling"
-  | "voicemail"
-  | "responded"
-  | "qualified"
-  | "quoted"
-  | "emailing"
-  | "completed"
-  | "no-response"
-  | "declined";
-
-export interface Vendor {
-  id: string;
-  name: string;
-  location: string;
-  employees: string;
-  contact: { name: string; role: string; linkedin?: string; phone?: string; email?: string };
-  status: VendorStatus;
-  unitPrice: number | null;
-  leadTime: number | null;
-  moq: number | null;
-  nre: number | null;
-  certs: string[];
-  capabilities: string[];
-  risk: string;
-  fitScore: number;
-  lastUpdate: string;
-  callDuration: string;
-  callOutcome: string;
-  summary: string;
-}
+import { Vendor, VendorStatus } from "./types";
 
 export const VENDORS: Vendor[] = [
   {
     id: "v-01", name: "Precision Machine Works", location: "Torrance, CA", employees: "45-60",
     contact: { name: "Diane Reyes", role: "VP Sales", linkedin: "in/dianereyes-pmw", phone: "(310) 555-0134", email: "d.reyes@pmw-cnc.com" },
-    status: "quoted", unitPrice: 41.20, leadTime: 28, moq: 100, nre: 1850,
+    status: "quoted", unit_price: 41.20, lead_time: 28, moq: 100, nre: 1850,
     certs: ["ISO 9001", "ITAR", "AS9100"], capabilities: ["5-axis CNC", "Anodizing in-house", "First-article inspection"],
-    risk: "low", fitScore: 94, lastUpdate: "2m ago", callDuration: "4:18", callOutcome: "Qualified",
+    risk: "low", fit_score: 94, last_update: "2m ago", call_duration: "4:18", call_outcome: "Qualified",
     summary: "Strong fit. In-house anodizing, AS9100, has capacity in their 5-axis cell.",
   },
   {
     id: "v-02", name: "Sierra Custom Metals", location: "Reno, NV", employees: "80-100",
     contact: { name: "Marcus Yun", role: "BD Lead", linkedin: "in/marcusyun", phone: "(775) 555-0188", email: "m.yun@sierracustom.com" },
-    status: "quoted", unitPrice: 38.90, leadTime: 35, moq: 250, nre: 2400,
+    status: "quoted", unit_price: 38.90, lead_time: 35, moq: 250, nre: 2400,
     certs: ["ISO 9001"], capabilities: ["3-axis + 5-axis", "Outsourced anodize"],
-    risk: "low", fitScore: 88, lastUpdate: "7m ago", callDuration: "3:42", callOutcome: "Qualified",
+    risk: "low", fit_score: 88, last_update: "7m ago", call_duration: "3:42", call_outcome: "Qualified",
     summary: "Lowest quote. Anodizing outsourced - adds 4 days to lead time.",
   },
   {
     id: "v-03", name: "Foshan Precision MFG", location: "Foshan, CN", employees: "200+",
     contact: { name: "Wei Chen", role: "Account Manager", linkedin: "in/weichen-fpm", phone: "+86 757 8812 4410", email: "w.chen@foshan-precision.cn" },
-    status: "quoted", unitPrice: 26.40, leadTime: 42, moq: 500, nre: 900,
+    status: "quoted", unit_price: 26.40, lead_time: 42, moq: 500, nre: 900,
     certs: ["ISO 9001", "IATF 16949"], capabilities: ["5-axis CNC", "Full anodizing line", "Export to NA"],
-    risk: "medium", fitScore: 81, lastUpdate: "14m ago", callDuration: "5:51", callOutcome: "Qualified",
+    risk: "medium", fit_score: 81, last_update: "14m ago", call_duration: "5:51", call_outcome: "Qualified",
     summary: "Cheapest unit price. Geography flagged per guardrail (NA preferred).",
   },
   {
     id: "v-04", name: "Cascade Tooling Co.", location: "Portland, OR", employees: "20-30",
     contact: { name: "Alex Tran", role: "Owner / Sales", linkedin: "in/alextran-cascade", phone: "(503) 555-0162", email: "alex@cascadetooling.com" },
-    status: "emailing", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "emailing", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: ["ISO 9001"], capabilities: ["5-axis CNC", "Anodize partner"],
-    risk: "low", fitScore: 79, lastUpdate: "just now", callDuration: "3:08", callOutcome: "Qualified - awaiting formal quote",
+    risk: "low", fit_score: 79, last_update: "just now", call_duration: "3:08", call_outcome: "Qualified - awaiting formal quote",
     summary: "Qualified on call. Formal quote requested via email; agent is negotiating MOQ.",
   },
   {
     id: "v-05", name: "Summit CNC", location: "Denver, CO", employees: "15-20",
     contact: { name: "Priya Desai", role: "Sales Manager", linkedin: "in/priyadesai-summit", phone: "(720) 555-0199", email: "p.desai@summitcnc.com" },
-    status: "calling", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "calling", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: ["ISO 9001"], capabilities: ["3-axis CNC", "Small-batch specialist"],
-    risk: "unknown", fitScore: 72, lastUpdate: "live", callDuration: "0:47", callOutcome: "In progress",
+    risk: "unknown", fit_score: 72, last_update: "live", call_duration: "0:47", call_outcome: "In progress",
     summary: "Call in progress - discussing capacity for 500-unit run.",
   },
   {
     id: "v-06", name: "Northgate Fabrication", location: "Hamilton, ON", employees: "60-80",
     contact: { name: "Owen Walsh", role: "Director of Sales", linkedin: "in/owenwalsh", phone: "(905) 555-0143", email: "o.walsh@northgatefab.ca" },
-    status: "voicemail", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "voicemail", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: ["ISO 9001", "ITAR"], capabilities: ["5-axis CNC", "Type III anodize"],
-    risk: "unknown", fitScore: 85, lastUpdate: "21m ago", callDuration: "0:32", callOutcome: "Voicemail left",
+    risk: "unknown", fit_score: 85, last_update: "21m ago", call_duration: "0:32", call_outcome: "Voicemail left",
     summary: "No pickup. Voicemail left with callback info; followup email queued.",
   },
   {
     id: "v-07", name: "Ironwood Machining", location: "Austin, TX", employees: "30-40",
     contact: { name: "Jenna Kowalski", role: "VP Operations", linkedin: "in/jennakowalski", phone: "(512) 555-0176", email: "j.kowalski@ironwoodmfg.com" },
-    status: "declined", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "declined", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: [], capabilities: ["3-axis CNC"],
-    risk: "-", fitScore: 64, lastUpdate: "32m ago", callDuration: "1:54", callOutcome: "No capacity this quarter",
+    risk: "-", fit_score: 64, last_update: "32m ago", call_duration: "1:54", call_outcome: "No capacity this quarter",
     summary: "Booked through Q3. Passed - follow up in August.",
   },
   {
     id: "v-08", name: "Midwest Precision", location: "Cleveland, OH", employees: "50-70",
     contact: { name: "Tom Beckett", role: "Sales Director", linkedin: "in/tombeckett-mwp", phone: "(216) 555-0155", email: "t.beckett@midwest-precision.com" },
-    status: "declined", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "declined", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: ["ISO 9001"], capabilities: ["5-axis CNC"],
-    risk: "-", fitScore: 77, lastUpdate: "44m ago", callDuration: "2:12", callOutcome: "Not a fit - no anodize partner",
+    risk: "-", fit_score: 77, last_update: "44m ago", call_duration: "2:12", call_outcome: "Not a fit - no anodize partner",
     summary: "Declined. Would need us to handle finishing separately; violates spec.",
   },
   {
     id: "v-09", name: "Kinetic Metalworks", location: "San Diego, CA", employees: "25-35",
     contact: { name: "Rita Oduya", role: "Sales Lead", linkedin: "in/ritaoduya", phone: "(619) 555-0109", email: "r.oduya@kinetic-metal.com" },
-    status: "calling", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "calling", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: ["ISO 9001"], capabilities: ["5-axis CNC", "Light anodize"],
-    risk: "unknown", fitScore: 83, lastUpdate: "live", callDuration: "1:23", callOutcome: "In progress",
+    risk: "unknown", fit_score: 83, last_update: "live", call_duration: "1:23", call_outcome: "In progress",
     summary: "Call in progress - confirming tolerance capability on thin walls.",
   },
   {
     id: "v-10", name: "Dongguan Sunrise Metals", location: "Dongguan, CN", employees: "150+",
     contact: { name: "Lily Wang", role: "Export Sales", linkedin: "in/lilywang-sunrise", phone: "+86 769 2280 1188", email: "l.wang@sunrisemetal.cn" },
-    status: "emailing", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "emailing", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: ["ISO 9001", "IATF 16949"], capabilities: ["5-axis CNC", "In-house anodize"],
-    risk: "medium", fitScore: 78, lastUpdate: "5m ago", callDuration: "4:05", callOutcome: "Qualified - quote pending",
+    risk: "medium", fit_score: 78, last_update: "5m ago", call_duration: "4:05", call_outcome: "Qualified - quote pending",
     summary: "Asked for 3D file; agent sent STEP + drawing. Awaiting quote.",
   },
   {
     id: "v-11", name: "Rockford CNC", location: "Rockford, IL", employees: "40-50",
     contact: { name: "Brandon Hale", role: "VP Sales", linkedin: "in/brandonhale-rockford", phone: "(815) 555-0181", email: "b.hale@rockfordcnc.com" },
-    status: "voicemail", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "voicemail", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: ["ISO 9001"], capabilities: ["3-axis + 5-axis", "Anodize partner"],
-    risk: "unknown", fitScore: 76, lastUpdate: "17m ago", callDuration: "0:28", callOutcome: "Voicemail - no callback window",
+    risk: "unknown", fit_score: 76, last_update: "17m ago", call_duration: "0:28", call_outcome: "Voicemail - no callback window",
     summary: "Left voicemail. Second attempt scheduled for tomorrow 10am.",
   },
   {
     id: "v-12", name: "BluePeak Manufacturing", location: "Boise, ID", employees: "20-30",
     contact: { name: "Karl Nguyen", role: "Owner", linkedin: "in/karlnguyen", phone: "(208) 555-0170", email: "karl@bluepeakmfg.com" },
-    status: "qualified", unitPrice: null, leadTime: null, moq: null, nre: null,
+    status: "qualified", unit_price: null, lead_time: null, moq: null, nre: null,
     certs: ["ISO 9001"], capabilities: ["5-axis CNC", "Specialty anodize"],
-    risk: "low", fitScore: 86, lastUpdate: "1m ago", callDuration: "6:02", callOutcome: "Qualified",
+    risk: "low", fit_score: 86, last_update: "1m ago", call_duration: "6:02", call_outcome: "Qualified",
     summary: "Strong fit. Owner-operated; quote expected within 24h.",
   },
 ];
