@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_anthropic_client, get_app_settings, get_supabase_client
 from app.models.rfq import ParseRFQRequest, ParseRFQResponse, CreateRFQRequest
 from app.services.rfq_parser import parse_rfq
-from typing import Any
 
 if TYPE_CHECKING:
     from app.config import Settings

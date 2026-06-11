@@ -1,11 +1,12 @@
 "use client";
 
 import useSWR from "swr";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 import { DASHBOARD_RFQS } from "@/lib/data";
 import { Icons } from "@/components/icons";
 import { DashboardStats } from "../dashboard/dashboard-stats";
 import { RfqList } from "../dashboard/rfq-list";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 interface RfqRow {
   id: string;

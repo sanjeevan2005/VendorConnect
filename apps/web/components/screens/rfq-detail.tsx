@@ -42,7 +42,7 @@ export function RfqDetail({ rfqId, onBack, onOpenVendor }: { rfqId: string; onBa
     
     let parsedVendors: Vendor[] = [];
     if (vendors && vendors.length > 0) {
-      parsedVendors = vendors.map((v: any) => {
+      parsedVendors = vendors.map((v: unknown) => {
         const res = VendorSchema.safeParse(v);
         return res.success ? (res.data as Vendor) : (v as unknown as Vendor);
       });
